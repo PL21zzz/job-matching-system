@@ -36,9 +36,61 @@ Yêu cầu hệ thống: Có cài đặt Docker Desktop.
 
 Bước 1: Clone dự án về máy
 
-git clone [https://github.com/nhatbao11/job-matching-system.git](https://github.com/nhatbao11/job-matching-system.git)
+git clone [https://github.com/PL21zzz/job-matching-system.git](https://github.com/PL21zzz/job-matching-system.git)
 cd job-matching-system
 
 Bước 2: Khởi chạy Cơ sở dữ liệu bằng Docker
 
 docker-compose up -d
+
+## 🗺️ Sơ Đồ Kiến Trúc Hệ Thống (System Architecture)
+
+Hệ thống được thiết kế theo luồng Microservices, tách biệt hoàn toàn giữa Core Logic và AI Processing để đảm bảo hiệu năng tối đa.
+
+```mermaid
+graph TD
+    %% Định nghĩa các Client
+    subgraph Client_Layer ["📱 Tầng Giao Diện Người Dùng (Client Layer)"]
+        Web["Web Portal<br/>(Next.js)"]
+        Mobile["Mobile App<br/>(React Native)"]
+        Voice["Voice Assistant<br/>(Speech-to-Text)"]
+        Mobile --- Voice
+    end
+
+    %% Định nghĩa Core Backend
+    subgraph Core_Layer ["⚙️ Tầng Xử Lý Trung Tâm (API Gateway & Logic)"]
+        NestJS["NestJS Server<br/>(RESTful API & Auth)"]
+    end
+
+    %% Định nghĩa AI Service
+    subgraph AI_Layer ["🧠 Tầng Trí Tuệ Nhân Tạo (AI Microservice)"]
+        Python["Python Server<br/>(FastAPI)"]
+        LLM["Mô Hình Ngôn Ngữ<br/>(LLM API)"]
+        Python -- Phân tích & Sinh CV --> LLM
+    end
+
+    %% Định nghĩa Database
+    subgraph Data_Layer ["🗄️ Tầng Lưu Trữ (Data Layer)"]
+        DB[("PostgreSQL<br/>(Database)")]
+    end
+
+    %% Mũi tên chỉ luồng dữ liệu
+    Web -- Gọi API --> NestJS
+    Mobile -- Gọi API --> NestJS
+
+    NestJS -- Request (JSON) --> Python
+    Python -- Response (AI Data) --> NestJS
+
+    NestJS -- Đọc / Ghi Dữ Liệu --> DB
+
+    %% Gắn màu sắc (Styling) cho đẹp
+    classDef client fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    classDef core fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
+    classDef ai fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+    classDef db fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
+
+    class Web,Mobile,Voice client;
+    class NestJS core;
+    class Python,LLM ai;
+    class DB db;
+```
