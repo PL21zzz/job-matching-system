@@ -1,0 +1,19 @@
+# Dependency directories
+node_modules/
+dist/
+
+# Environment variables
+.env
+.env.*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+
+# Database Data (Ngăn Git đẩy dữ liệu của Docker lên)
+postgres_data/
+pgadmin_data/
