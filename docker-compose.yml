@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  # Container chạy Database PostgreSQL
+  postgres:
+    image: postgres:15
+    container_name: job_matching_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Container chạy pgAdmin (Giao diện quản lý Database)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_ui
+    restart: always
+    environment:
+      # Nếu trong .env không có PGADMIN_EMAIL, mặc định sẽ lấy admin@admin.com
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
