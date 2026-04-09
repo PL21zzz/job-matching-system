@@ -1,4 +1,5 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config'; // <-- Import thêm
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { Pool } from 'pg';
@@ -8,15 +9,12 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
-  constructor() {
-    // 1. Tạo một Pool kết nối tới PostgreSQL bằng URL trong .env
-    const connectionString = process.env.DATABASE_URL;
-    const pool = new Pool({ connectionString });
+  constructor(private configService: ConfigService) {
+    const connectionString = configService.get<string>('DATABASE_URL');
 
-    // 2. Gói Pool đó vào Prisma Adapter
+    const pool = new Pool({ connectionString });
     const adapter = new PrismaPg(pool);
 
-    // 3. Đẩy cấu hình vào PrismaClient
     super({ adapter });
   }
 
