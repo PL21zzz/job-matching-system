@@ -3,6 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
@@ -10,7 +11,10 @@ import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService, // Tiêm JwtService vào đây
+  ) {}
   async register(dto: RegisterDto) {
     const { email, password, fullName, role } = dto;
 
@@ -69,11 +73,15 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }
 
-    // 4. Tối ưu: Xóa passwordHash trước khi trả về cho Client để bảo mật
+    // 4. Tạo "Thẻ bài" (JWT Token)
+    const payload = { sub: user.id, email: user.email, role: user.roleId };
+    const accessToken = await this.jwtService.signAsync(payload);
+
     const { passwordHash, ...result } = user;
 
     return {
       user: result,
+      access_token: accessToken, // Trả thêm cái thẻ này về cho Client
       message: 'Đăng nhập thành công!',
     };
   }
