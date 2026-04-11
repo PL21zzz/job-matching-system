@@ -1,13 +1,16 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
-import { RegisterDto } from './dto/register.dto'; // <-- Import DTO
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
   constructor(private prisma: PrismaService) {}
-
-  // Sửa lại tham số đầu vào: Hứng trọn bộ RegisterDto
   async register(dto: RegisterDto) {
     const { email, password, fullName, role } = dto;
 
@@ -22,8 +25,7 @@ export class AuthService {
     // 2. Băm mật khẩu
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3. Tạm thời quy ước Role (Vì bảng Role hiện tại chưa có data)
-    // Giả sử: EMPLOYER là 1, CANDIDATE là 2
+    // 3. Tạm thời quy ước Role
     const mappedRoleId = role === 'EMPLOYER' ? 1 : 2;
 
     // 4. Lưu toàn bộ xuống bảng users
@@ -31,8 +33,8 @@ export class AuthService {
       data: {
         email: email,
         passwordHash: hashedPassword,
-        fullName: fullName, // <-- Đã có thể lưu fullName
-        roleId: mappedRoleId, // <-- Ánh xạ vai trò vào cột role_id
+        fullName: fullName,
+        roleId: mappedRoleId,
       },
     });
 
@@ -41,6 +43,38 @@ export class AuthService {
       email: newUser.email,
       fullName: newUser.fullName,
       message: 'Đăng ký tài khoản thành công!',
+    };
+  }
+
+  async login(dto: LoginDto) {
+    const { email, password } = dto;
+
+    // 1. Tìm user theo email
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    // 2. Nếu không thấy user -> Chặn luôn
+    if (!user) {
+      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
+    }
+
+    // 3. Kiểm tra mật khẩu (So sánh pass thô với pass đã băm trong DB)
+    const isPasswordMatching = await bcrypt.compare(
+      password,
+      user.passwordHash,
+    );
+
+    if (!isPasswordMatching) {
+      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
+    }
+
+    // 4. Tối ưu: Xóa passwordHash trước khi trả về cho Client để bảo mật
+    const { passwordHash, ...result } = user;
+
+    return {
+      user: result,
+      message: 'Đăng nhập thành công!',
     };
   }
 }
