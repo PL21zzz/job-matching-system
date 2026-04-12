@@ -8,11 +8,16 @@ describe('AuthService', () => {
   let service: AuthService;
   let prisma: PrismaService;
 
-  // Khởi tạo mock đơn giản
   const mockPrisma = {
     user: {
       findUnique: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
+    },
+    otp: {
+      findUnique: jest.fn(),
+      delete: jest.fn(),
+      upsert: jest.fn(),
     },
   };
 
@@ -60,5 +65,23 @@ describe('AuthService', () => {
     await expect(service.register(dto)).rejects.toThrow(
       'Email này đã được sử dụng!',
     );
+  });
+
+  // Một ví dụ đơn giản về kịch bản test cho hàm Verify
+  it('nên kích hoạt tài khoản thành công khi nhập đúng OTP', async () => {
+    // 1. Giả lập (Mock) là trong DB đang có mã OTP đúng
+    mockPrisma.otp.findUnique.mockResolvedValue({
+      code: '123456',
+      expiresAt: new Date(Date.now() + 10000),
+    });
+
+    // 2. Gọi hàm verify
+    const result = await service.verifyRegister({
+      email: 'test@gmail.com',
+      otp: '123456',
+    });
+
+    // 3. Khẳng định (Expect) kết quả trả về phải đúng như mong đợi
+    expect(result.message).toContain('Kích hoạt tài khoản thành công');
   });
 });
