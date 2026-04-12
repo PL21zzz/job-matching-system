@@ -24,12 +24,22 @@ model User {
   email         String   @unique
   passwordHash  String   @map("password_hash")
   fullName      String   @map("full_name")
-  status        String   @default("active")
   createdAt     DateTime @default(now()) @map("created_at")
+
+  // Chỉ giữ lại MỘT dòng status này thôi:
+  status        String   @default("PENDING") // PENDING (chờ xác thực), ACTIVE (đã xác thực), BANNED
 
   // Thiết lập khóa ngoại (Foreign Key) nối với bảng Role
   roleId        Int?     @map("role_id")
   role          Role?    @relation(fields: [roleId], references: [id])
 
-  @@map("users") // Ép tên bảng trong DB là chữ thường số nhiều
+  @@map("users")
+}
+
+model Otp {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  code      String   // Lưu mã OTP (đã băm hoặc để thô tùy bạn, ở đây để thô cho dễ test)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
