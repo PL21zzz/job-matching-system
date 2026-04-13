@@ -36,8 +36,8 @@ export class AuthService {
         email: dto.email,
         passwordHash: hashedPassword,
         fullName: dto.fullName,
-        status: 'PENDING', // Chưa cho phép login
-        roleId: dto.role === 'EMPLOYER' ? 1 : 2, // Giả định roleId
+        status: 'PENDING',
+        roleId: dto.role === 'EMPLOYER' ? 2 : 3,
       },
     });
 
@@ -67,8 +67,12 @@ export class AuthService {
 
   async verifyRegister(dto: VerifyRegisterDto) {
     const { email, otp } = dto;
-    const otpRecord = await this.prisma.otp.findUnique({ where: { email } });
 
+    // 1. Tìm OTP và User
+    const otpRecord = await this.prisma.otp.findUnique({ where: { email } });
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) throw new NotFoundException('User không tồn tại');
     if (
       !otpRecord ||
       otpRecord.code !== otp ||
@@ -77,17 +81,29 @@ export class AuthService {
       throw new BadRequestException('Mã OTP không chính xác hoặc đã hết hạn!');
     }
 
-    // Cập nhật trạng thái User thành ACTIVE
+    // 2. Cập nhật trạng thái User thành ACTIVE
     await this.prisma.user.update({
       where: { email },
       data: { status: 'ACTIVE' },
     });
 
-    // Xóa OTP
+    // 3. --- FIX BUG Ở ĐÂY: TỰ ĐỘNG TẠO PROFILE DỰA TRÊN ROLE ---
+    // Giả sử: Role 2 là Employer, Role 3 là Candidate (theo đúng bảng roles bạn nạp)
+    if (user.roleId === 2) {
+      await this.prisma.employerProfile.create({
+        data: { userId: user.id, companyName: 'Tên công ty mặc định' },
+      });
+    } else if (user.roleId === 3) {
+      await this.prisma.candidateProfile.create({
+        data: { userId: user.id, fullName: user.fullName },
+      });
+    }
+
+    // 4. Xóa OTP
     await this.prisma.otp.delete({ where: { email } });
 
     return {
-      message: 'Kích hoạt tài khoản thành công! Bây giờ bạn có thể đăng nhập.',
+      message: 'Kích hoạt tài khoản thành công! Profile đã được khởi tạo.',
     };
   }
 
