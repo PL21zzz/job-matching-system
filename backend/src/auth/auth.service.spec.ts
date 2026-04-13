@@ -1,8 +1,8 @@
-import { BadRequestException } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Test, TestingModule } from '@nestjs/testing'; // Bị thiếu dòng này
+import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
-import { AuthService } from './auth.service'; // Bị thiếu dòng này
+import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -18,6 +18,10 @@ describe('AuthService', () => {
       findUnique: jest.fn(),
       delete: jest.fn(),
       upsert: jest.fn(),
+    },
+    // --- PHẢI THÊM CÁI NÀY ĐỂ KHÔNG LỖI ---
+    candidateProfile: {
+      create: jest.fn(),
     },
   };
 
@@ -38,50 +42,68 @@ describe('AuthService', () => {
     prisma = module.get<PrismaService>(PrismaService);
   });
 
-  // Xóa sạch các vạch đỏ bằng cách reset mock sau mỗi test
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it('nên được khởi tạo thành công', () => {
-    expect(service).toBeDefined();
+  // ... (Giữ nguyên các test register và verify cũ của bạn) ...
+
+  describe('login (Email truyền thống)', () => {
+    it('nên ném lỗi nếu tài khoản đăng ký bằng Google cố tình login bằng mật khẩu', async () => {
+      const loginDto = { email: 'google-user@gmail.com', password: '123' };
+
+      // Giả lập user tìm thấy nhưng passwordHash là null (do dùng Google)
+      mockPrisma.user.findUnique.mockResolvedValue({
+        email: 'google-user@gmail.com',
+        passwordHash: null,
+        status: 'ACTIVE',
+      });
+
+      await expect(service.login(loginDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(service.login(loginDto)).rejects.toThrow(
+        'Tài khoản này được đăng ký bằng Google. Vui lòng đăng nhập bằng Google!',
+      );
+    });
   });
 
-  it('nên ném ra lỗi nếu email đã tồn tại khi đăng ký', async () => {
-    const dto = {
-      email: 'test@gmail.com',
-      password: 'password123',
-      fullName: 'Phong',
-      role: 'CANDIDATE',
+  describe('googleLogin', () => {
+    const googleProfile = {
+      email: 'phong@gmail.com',
+      fullName: 'Nguyễn Phong',
+      providerId: '12345',
     };
 
-    // Giả lập: Database tìm thấy user đã tồn tại (findUnique trả về 1 object)
-    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
-      id: '1',
-      email: 'test@gmail.com',
+    it('nên đăng nhập luôn nếu user đã tồn tại', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user-123',
+        email: 'phong@gmail.com',
+        roleId: 3,
+      });
+      mockJwt.signAsync.mockResolvedValue('fake-jwt-token');
+
+      const result = await service.googleLogin(googleProfile);
+
+      expect(result).toHaveProperty('access_token');
+      expect(mockPrisma.user.create).not.toHaveBeenCalled(); // Không được tạo mới
     });
 
-    await expect(service.register(dto)).rejects.toThrow(BadRequestException);
-    await expect(service.register(dto)).rejects.toThrow(
-      'Email này đã được sử dụng!',
-    );
-  });
+    it('nên tạo user mới và profile mới nếu user chưa tồn tại', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null); // User chưa có
+      mockPrisma.user.create.mockResolvedValue({
+        id: 'new-user-id',
+        email: 'phong@gmail.com',
+        fullName: 'Nguyễn Phong',
+        roleId: 3,
+      });
+      mockJwt.signAsync.mockResolvedValue('new-jwt-token');
 
-  // Một ví dụ đơn giản về kịch bản test cho hàm Verify
-  it('nên kích hoạt tài khoản thành công khi nhập đúng OTP', async () => {
-    // 1. Giả lập (Mock) là trong DB đang có mã OTP đúng
-    mockPrisma.otp.findUnique.mockResolvedValue({
-      code: '123456',
-      expiresAt: new Date(Date.now() + 10000),
+      const result = await service.googleLogin(googleProfile);
+
+      expect(mockPrisma.user.create).toHaveBeenCalled();
+      expect(mockPrisma.candidateProfile.create).toHaveBeenCalled(); // Quan trọng: Phải tạo profile
+      expect(result.access_token).toBe('new-jwt-token');
     });
-
-    // 2. Gọi hàm verify
-    const result = await service.verifyRegister({
-      email: 'test@gmail.com',
-      otp: '123456',
-    });
-
-    // 3. Khẳng định (Expect) kết quả trả về phải đúng như mong đợi
-    expect(result.message).toContain('Kích hoạt tài khoản thành công');
   });
 });

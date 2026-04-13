@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { GoogleStrategy } from './strategies/google.strategy';
 import { TasksService } from './tasks.service';
 
 @Module({
@@ -21,6 +22,6 @@ import { TasksService } from './tasks.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, TasksService],
+  providers: [AuthService, TasksService, GoogleStrategy],
 })
 export class AuthModule {}

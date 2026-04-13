@@ -51,7 +51,12 @@ export class AuthService {
       create: { email: user.email, code: otpCode, expiresAt },
     });
 
-    await this.sendOtpMail(user.email, otpCode); // Hàm gửi mail hôm qua
+    await this.sendOtpMail(
+      user.email,
+      otpCode,
+      'Xác thực đăng ký tài khoản',
+      'Cảm ơn bạn đã đăng ký. Đây là mã OTP để kích hoạt tài khoản của bạn:',
+    );
 
     return {
       message:
@@ -106,10 +111,17 @@ export class AuthService {
       );
     }
 
+    // Kiểm tra xem user có mật khẩu không
+    if (!user.passwordHash) {
+      throw new UnauthorizedException(
+        'Tài khoản này được đăng ký bằng Google. Vui lòng đăng nhập bằng Google!',
+      );
+    }
+
     // 4. Kiểm tra mật khẩu (So sánh pass thô với pass đã băm trong DB)
     const isPasswordMatching = await bcrypt.compare(
-      password,
-      user.passwordHash,
+      dto.password,
+      user.passwordHash!,
     );
 
     if (!isPasswordMatching) {
@@ -135,6 +147,42 @@ export class AuthService {
     };
   }
 
+  async googleLogin(reqUser: any) {
+    // 1. Tìm xem user đã tồn tại chưa
+    let user = await this.prisma.user.findUnique({
+      where: { email: reqUser.email },
+    });
+
+    // 2. Nếu chưa có, tạo mới luôn (vì Google đã verify email rồi)
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email: reqUser.email,
+          fullName: reqUser.fullName,
+          provider: 'google',
+          providerId: reqUser.providerId,
+          status: 'ACTIVE', // Kích hoạt luôn
+          roleId: 3, // Mặc định là Candidate (bạn đã nạp role 3 lúc nãy)
+        },
+      });
+
+      // 3. Tự động tạo Profile ứng viên trống
+      await this.prisma.candidateProfile.create({
+        data: { userId: user.id, fullName: user.fullName },
+      });
+    }
+
+    // 4. Trả về JWT Token như đăng nhập bình thường
+    const payload = { sub: user.id, email: user.email, role: user.roleId };
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+      user: {
+        email: user.email,
+        fullName: user.fullName,
+      },
+    };
+  }
+
   async forgotPassword(email: string) {
     // 1. Kiểm tra user có tồn tại không
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -152,7 +200,12 @@ export class AuthService {
     });
 
     // 4. Gửi mail
-    await this.sendOtpMail(email, otpCode);
+    await this.sendOtpMail(
+      email,
+      otpCode,
+      'Khôi phục mật khẩu',
+      'Bạn đã yêu cầu đặt lại mật khẩu. Vui lòng sử dụng mã OTP dưới đây:',
+    );
 
     return { message: 'Mã OTP đã được gửi vào email của bạn!' };
   }
@@ -183,7 +236,12 @@ export class AuthService {
     return { message: 'Đổi mật khẩu thành công!' };
   }
 
-  private async sendOtpMail(email: string, otp: string) {
+  private async sendOtpMail(
+    email: string,
+    otp: string,
+    subject: string,
+    message: string,
+  ) {
     const transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
       port: 587,
@@ -197,16 +255,15 @@ export class AuthService {
     const mailOptions = {
       from: '"Job Matching System" <no-reply@jobmatching.com>',
       to: email,
-      subject: 'Mã xác thực OTP - Reset mật khẩu',
+      subject: subject, // Dùng tham số subject
       html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #4CAF50;">Mã xác thực của bạn</h2>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px;">
+        <h2 style="color: #4CAF50;">Mã xác thực OTP</h2>
         <p>Chào bạn,</p>
-        <p>Bạn đã yêu cầu đặt lại mật khẩu. Mã OTP của bạn là:</p>
-        <h1 style="background: #f4f4f4; padding: 10px; text-align: center; letter-spacing: 5px; color: #333;">${otp}</h1>
-        <p>Mã này sẽ hết hạn trong 10 phút. Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>
-        <hr />
-        <p style="font-size: 12px; color: #888;">Trân trọng, Đội ngũ Job Matching System</p>
+        <p>${message}</p> <h1 style="background: #f4f4f4; padding: 15px; text-align: center; letter-spacing: 10px; color: #333; border-radius: 5px;">${otp}</h1>
+        <p>Mã này sẽ hết hạn trong 10 phút. Nếu bạn không yêu cầu, vui lòng bảo mật email này.</p>
+        <hr style="border: none; border-top: 1px solid #eee;" />
+        <p style="font-size: 12px; color: #888;">Trân trọng,<br/>Đội ngũ Job Matching System</p>
       </div>
     `,
     };
@@ -215,9 +272,7 @@ export class AuthService {
       await transporter.sendMail(mailOptions);
     } catch (error) {
       console.error('Lỗi gửi mail: ', error);
-      throw new BadRequestException(
-        'Không thể gửi mail lúc này, vui lòng thử lại sau!',
-      );
+      throw new BadRequestException('Không thể gửi mail lúc này!');
     }
   }
 }
