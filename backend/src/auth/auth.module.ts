@@ -4,6 +4,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { RtStrategy } from './strategies/rt.strategy';
 import { TasksService } from './tasks.service';
 
 @Module({
@@ -11,9 +13,8 @@ import { TasksService } from './tasks.service';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'fallbackSecretKey',
+        secret: configService.get<string>('JWT_SECRET'),
         signOptions: {
-          // Thêm "as any" vào cuối dòng này để bỏ qua kiểm tra kiểu nghiêm ngặt
           expiresIn: (configService.get<string>('JWT_EXPIRES_IN') ||
             '1d') as any,
         },
@@ -22,6 +23,12 @@ import { TasksService } from './tasks.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, TasksService, GoogleStrategy],
+  providers: [
+    AuthService,
+    TasksService,
+    GoogleStrategy,
+    JwtStrategy,
+    RtStrategy,
+  ],
 })
 export class AuthModule {}

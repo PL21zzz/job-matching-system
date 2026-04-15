@@ -1,10 +1,11 @@
 import {
   IsEmail,
-  IsIn,
+  IsEnum,
   IsNotEmpty,
   IsString,
   MinLength,
 } from 'class-validator';
+import { RoleName } from '../constants/role.enum';
 
 export class RegisterDto {
   @IsNotEmpty({ message: 'Email không được để trống' })
@@ -20,8 +21,8 @@ export class RegisterDto {
   fullName!: string;
 
   @IsNotEmpty({ message: 'Bạn phải chọn vai trò' })
-  @IsIn(['CANDIDATE', 'EMPLOYER'], {
-    message: 'Vai trò chỉ được là CANDIDATE hoặc EMPLOYER',
+  @IsEnum(RoleName, {
+    message: 'Vai trò phải là Employer hoặc Candidate',
   })
-  role!: string;
+  role!: RoleName;
 }

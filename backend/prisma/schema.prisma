@@ -30,6 +30,7 @@ model User {
 
   roleId        Int?     @map("role_id")
   role          Role?    @relation(fields: [roleId], references: [id])
+  refreshTokenHash String?
 
   // Quan hệ 1-1 với các loại Profile
   candidateProfile CandidateProfile?
