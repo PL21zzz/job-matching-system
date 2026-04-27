@@ -55,7 +55,6 @@ model CandidateProfile {
   id                 String          @id @default(uuid())
   userId             String          @unique @map("user_id")
   user               User            @relation(fields: [userId], references: [id])
-  fullName           String?         @map("full_name")
   dob                DateTime?
   phone              String?
   address            String?

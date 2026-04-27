@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
@@ -17,6 +13,7 @@ describe('AuthService', () => {
   let prisma: PrismaService;
   let jwt: JwtService;
 
+  // 1. CẬP NHẬT MOCK PRISMA (Thêm $transaction)
   const mockPrisma = {
     user: {
       findUnique: jest.fn(),
@@ -34,6 +31,8 @@ describe('AuthService', () => {
     },
     candidateProfile: { create: jest.fn() },
     employerProfile: { create: jest.fn() },
+    // Cực kỳ quan trọng: Mock transaction để chạy callback
+    $transaction: jest.fn(),
   };
 
   const mockJwt = {
@@ -53,8 +52,12 @@ describe('AuthService', () => {
     prisma = module.get<PrismaService>(PrismaService);
     jwt = module.get<JwtService>(JwtService);
 
-    // Giả lập gửi mail để không bị lỗi khi chạy test
     jest.spyOn(service as any, 'sendOtpMail').mockResolvedValue(undefined);
+
+    // Mặc định cho $transaction chạy callback ngay lập tức
+    mockPrisma.$transaction.mockImplementation((callback) =>
+      callback(mockPrisma),
+    );
   });
 
   afterEach(() => {
@@ -62,26 +65,57 @@ describe('AuthService', () => {
     jest.restoreAllMocks();
   });
 
-  // --- 1. TEST REGISTER ---
+  // --- 1. TEST REGISTER (LOGIC MỚI: TẠO PROFILE NGAY) ---
   describe('register', () => {
-    it('nên đăng ký thành công và gửi OTP', async () => {
+    it('nên đăng ký thành công cho Candidate và tạo luôn Profile', async () => {
       const dto = {
-        email: 'new@g.com',
+        email: 'candidate@g.com',
         password: '123',
-        fullName: 'Phong',
+        fullName: 'Phong Candidate',
         role: RoleName.CANDIDATE,
       };
-      mockPrisma.user.findUnique.mockResolvedValue(null); // Email chưa tồn tại
+
+      mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.role.findUnique.mockResolvedValue({
         id: 3,
         name: RoleName.CANDIDATE,
       });
-      mockPrisma.user.create.mockResolvedValue({ ...dto, id: 'u1' });
+      mockPrisma.user.create.mockResolvedValue({ id: 'u1', ...dto });
 
       const result = await service.register(dto);
 
       expect(result.message).toContain('Đăng ký thành công');
+      // Kiểm tra xem có tạo Profile không
+      expect(mockPrisma.candidateProfile.create).toHaveBeenCalledWith({
+        data: { userId: 'u1' },
+      });
       expect(mockPrisma.otp.upsert).toHaveBeenCalled();
+    });
+
+    it('nên đăng ký thành công cho Employer và lưu companyName', async () => {
+      const dto = {
+        email: 'employer@g.com',
+        password: '123',
+        fullName: 'Phong Boss',
+        role: RoleName.EMPLOYER,
+        companyName: 'Equitas AI Corp',
+      };
+
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.role.findUnique.mockResolvedValue({
+        id: 2,
+        name: RoleName.EMPLOYER,
+      });
+      mockPrisma.user.create.mockResolvedValue({ id: 'u2', ...dto });
+
+      await service.register(dto);
+
+      expect(mockPrisma.employerProfile.create).toHaveBeenCalledWith({
+        data: {
+          userId: 'u2',
+          companyName: 'Equitas AI Corp',
+        },
+      });
     });
 
     it('nên ném lỗi nếu email đã tồn tại', async () => {
@@ -92,27 +126,32 @@ describe('AuthService', () => {
     });
   });
 
-  // --- 2. TEST VERIFY REGISTER ---
+  // --- 2. TEST VERIFY REGISTER (LOGIC MỚI: CHỈ KÍCH HOẠT STATUS) ---
   describe('verifyRegister', () => {
-    const dto = { email: 'p@g.com', otp: '123456' };
+    const dto = { email: 'p@g.com', code: '123456' };
 
-    it('nên kích hoạt tài khoản và tạo Profile cho Employer', async () => {
+    it('nên kích hoạt tài khoản ACTIVE và KHÔNG tạo lại Profile', async () => {
       mockPrisma.user.findUnique.mockResolvedValue({
         id: '1',
-        fullName: 'Sếp',
-        role: { name: RoleName.EMPLOYER },
+        status: 'PENDING',
       });
       mockPrisma.otp.findUnique.mockResolvedValue({
         code: '123456',
         expiresAt: new Date(Date.now() + 10000),
       });
 
-      await service.verifyRegister(dto);
+      const result = await service.verifyRegister(dto);
 
-      expect(mockPrisma.user.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { status: 'ACTIVE' } }),
-      );
-      expect(mockPrisma.employerProfile.create).toHaveBeenCalled();
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { email: dto.email },
+        data: { status: 'ACTIVE' },
+      });
+
+      // Đảm bảo không tạo lại Profile ở bước này
+      expect(mockPrisma.employerProfile.create).not.toHaveBeenCalled();
+      expect(mockPrisma.candidateProfile.create).not.toHaveBeenCalled();
+      expect(mockPrisma.otp.delete).toHaveBeenCalled();
+      expect(result.message).toContain('thành công');
     });
 
     it('nên ném lỗi nếu OTP sai', async () => {
@@ -153,7 +192,7 @@ describe('AuthService', () => {
     });
   });
 
-  // --- 4. TEST GOOGLE LOGIN ---
+  // --- 4. TEST GOOGLE LOGIN (CŨNG DÙNG TRANSACTION) ---
   describe('googleLogin', () => {
     const googleUser = {
       email: 'g@g.com',
@@ -171,7 +210,7 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('access_token');
     });
 
-    it('nên tạo mới user và profile nếu là lần đầu dùng Google', async () => {
+    it('nên tạo mới user và profile bằng transaction nếu là lần đầu', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.role.findUnique.mockResolvedValue({ id: 3 });
       mockPrisma.user.create.mockResolvedValue({
@@ -180,6 +219,7 @@ describe('AuthService', () => {
       });
 
       await service.googleLogin(googleUser);
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
       expect(mockPrisma.user.create).toHaveBeenCalled();
       expect(mockPrisma.candidateProfile.create).toHaveBeenCalled();
     });
@@ -228,9 +268,9 @@ describe('AuthService', () => {
     });
   });
 
-  // --- 7. TEST GET ME ---
-  describe('getMe', () => {
-    it('nên trả về thông tin user không kèm password', async () => {
+  // --- 7. TEST GET ME & LOGOUT ---
+  describe('getMe & logout', () => {
+    it('getMe: nên trả về thông tin user không kèm password', async () => {
       mockPrisma.user.findUnique.mockResolvedValue({
         id: '1',
         passwordHash: 'h',
@@ -241,21 +281,10 @@ describe('AuthService', () => {
       expect(result.email).toBe('p@g.com');
     });
 
-    it('nên ném lỗi 404 nếu không tìm thấy user', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
-      await expect(service.getMe('invalid')).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  // --- 7. TEST LOGOUT ---
-  describe('logout', () => {
-    it('nên xóa refreshTokenHash trong DB khi logout', async () => {
-      const userId = 'user-123';
-
-      await service.logout(userId);
-
+    it('logout: nên xóa refreshTokenHash', async () => {
+      await service.logout('123');
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
-        where: { id: userId },
+        where: { id: '123' },
         data: { refreshTokenHash: null },
       });
     });

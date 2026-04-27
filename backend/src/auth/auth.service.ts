@@ -23,95 +23,106 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  // 1. ĐĂNG KÝ (Tìm Role động)
+  // 1. ĐĂNG KÝ
   async register(dto: RegisterDto) {
+    // 1. Kiểm tra email (Giữ nguyên)
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
     if (existingUser)
       throw new BadRequestException('Email này đã được sử dụng!');
 
+    // 2. Tìm Role (Giữ nguyên)
     const role = await this.prisma.role.findUnique({
       where: { name: dto.role },
     });
-
     if (!role) throw new BadRequestException('Vai trò không hợp lệ!');
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        passwordHash: hashedPassword,
-        fullName: dto.fullName,
-        status: 'PENDING',
-        roleId: role.id,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      // A. Tạo User
+      const user = await tx.user.create({
+        data: {
+          email: dto.email,
+          passwordHash: hashedPassword,
+          fullName: dto.fullName,
+          status: 'PENDING',
+          roleId: role.id,
+        },
+      });
+
+      // B. Tạo Profile tương ứng (Logic cực gọn)
+      if (dto.role === 'Candidate') {
+        await tx.candidateProfile.create({ data: { userId: user.id } });
+      } else if (dto.role === 'Employer') {
+        await tx.employerProfile.create({
+          data: {
+            userId: user.id,
+            companyName: dto.companyName, // Đã được Validator đảm bảo có dữ liệu
+          },
+        });
+      }
+
+      // C. OTP & Mail (Giữ nguyên logic của sếp)
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      await tx.otp.upsert({
+        where: { email: user.email },
+        update: {
+          code: otpCode,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        },
+        create: {
+          email: user.email,
+          code: otpCode,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        },
+      });
+
+      await this.sendOtpMail(
+        user.email,
+        otpCode,
+        'Xác thực tài khoản',
+        'Mã OTP của bạn là:',
+      );
+
+      return { message: 'Đăng ký thành công!', email: user.email };
     });
-
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-    await this.prisma.otp.upsert({
-      where: { email: user.email },
-      update: { code: otpCode, expiresAt },
-      create: { email: user.email, code: otpCode, expiresAt },
-    });
-
-    await this.sendOtpMail(
-      user.email,
-      otpCode,
-      'Xác thực đăng ký tài khoản',
-      'Cảm ơn bạn đã đăng ký. Đây là mã OTP để kích hoạt tài khoản của bạn:',
-    );
-
-    return {
-      message: 'Đăng ký thành công! Vui lòng kiểm tra email để lấy mã OTP.',
-      email: user.email,
-    };
   }
 
   // 2. XÁC THỰC OTP & TẠO PROFILE
   async verifyRegister(dto: VerifyRegisterDto) {
-    const { email, otp } = dto;
+    // 1. Đảm bảo dto có trường 'code' (hoặc sếp sửa DTO thành 'otp' cho khớp)
+    const { email, code } = dto;
 
     const user = await this.prisma.user.findUnique({
       where: { email },
-      include: { role: true },
     });
 
     if (!user) throw new NotFoundException('Người dùng không tồn tại!');
 
+    // 2. Kiểm tra OTP
     const otpRecord = await this.prisma.otp.findUnique({ where: { email } });
+
     if (
       !otpRecord ||
-      otpRecord.code !== otp ||
+      otpRecord.code !== code ||
       otpRecord.expiresAt < new Date()
     ) {
       throw new BadRequestException('Mã OTP không chính xác hoặc đã hết hạn!');
     }
 
-    // Update ACTIVE
+    // 3. Update trạng thái ACTIVE (Hồ sơ đã được tạo ở bước Register rồi)
     await this.prisma.user.update({
       where: { email },
       data: { status: 'ACTIVE' },
     });
 
-    // Tạo Profile dựa trên Role Name (Dùng Enum)
-    if (user.role?.name === RoleName.EMPLOYER) {
-      await this.prisma.employerProfile.create({
-        data: { userId: user.id, companyName: `Công ty của ${user.fullName}` },
-      });
-    } else if (user.role?.name === RoleName.CANDIDATE) {
-      await this.prisma.candidateProfile.create({
-        data: { userId: user.id, fullName: user.fullName },
-      });
-    }
-
+    // 4. Xóa OTP sau khi dùng xong
     await this.prisma.otp.delete({ where: { email } });
 
     return {
-      message: 'Kích hoạt tài khoản thành công! Hồ sơ đã được khởi tạo.',
+      message: 'Kích hoạt tài khoản thành công!',
     };
   }
 
@@ -154,7 +165,7 @@ export class AuthService {
     };
   }
 
-  // 4. GOOGLE LOGIN (Cũng phải ném Role Name vào payload)
+  // 4. GOOGLE LOGIN
   async googleLogin(reqUser: any) {
     let user = await this.prisma.user.findUnique({
       where: { email: reqUser.email },
@@ -162,37 +173,50 @@ export class AuthService {
     });
 
     if (!user) {
-      // Tìm role Candidate động
+      // 1. Tìm role Candidate động
       const candidateRole = await this.prisma.role.findUnique({
         where: { name: RoleName.CANDIDATE },
       });
 
-      user = await this.prisma.user.create({
-        data: {
-          email: reqUser.email,
-          fullName: reqUser.fullName,
-          provider: 'google',
-          providerId: reqUser.providerId,
-          status: 'ACTIVE',
-          roleId: candidateRole?.id || 3,
-        },
-        include: { role: true },
-      });
+      // 2. --- VÍT GA TRANSACTION Ở ĐÂY ---
+      user = await this.prisma.$transaction(async (tx) => {
+        // Tạo User trong transaction
+        const newUser = await tx.user.create({
+          data: {
+            email: reqUser.email,
+            fullName: reqUser.fullName,
+            provider: 'google',
+            providerId: reqUser.providerId,
+            status: 'ACTIVE',
+            roleId: candidateRole?.id || 3,
+          },
+          include: { role: true },
+        });
 
-      await this.prisma.candidateProfile.create({
-        data: { userId: user.id, fullName: user.fullName },
+        // Tạo luôn Profile trong transaction
+        await tx.candidateProfile.create({
+          data: { userId: newUser.id },
+        });
+
+        return newUser;
       });
     }
 
+    // 3. Logic tạo payload và trả về token (Giữ nguyên)
     const payload = {
       sub: user.id,
       email: user.email,
       role: user.role?.name || RoleName.CANDIDATE,
     };
 
+    // Nếu sếp có hàm getTokens riêng thì gọi, không thì dùng signAsync như cũ
     return {
       access_token: await this.jwtService.signAsync(payload),
-      user: { email: user.email, fullName: user.fullName },
+      user: {
+        email: user.email,
+        fullName: user.fullName,
+        role: payload.role,
+      },
     };
   }
 
@@ -332,7 +356,7 @@ export class AuthService {
     return { message: 'Đăng xuất thành công!' };
   }
 
-  // HELPER: GỬI MAIL
+  // HELPER: SEND EMAIL
   private async sendOtpMail(
     email: string,
     otp: string,
@@ -358,5 +382,43 @@ export class AuthService {
         </div>
       `,
     });
+  }
+
+  // HELPER: RESEND EMAIL
+  async resendOtp(email: string) {
+    // 1. Kiểm tra user có tồn tại không
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Người dùng không tồn tại!');
+    }
+
+    // 2. Nếu đã ACTIVE rồi thì không cho gửi lại nữa
+    if (user.status === 'ACTIVE') {
+      throw new BadRequestException('Tài khoản này đã được kích hoạt rồi!');
+    }
+
+    // 3. Tạo mã OTP mới (giống lúc Register)
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 phút mới
+
+    // 4. Lưu/Cập nhật vào bảng OTP
+    await this.prisma.otp.upsert({
+      where: { email },
+      update: { code: otpCode, expiresAt },
+      create: { email, code: otpCode, expiresAt },
+    });
+
+    // 5. Gửi email
+    await this.sendOtpMail(
+      email,
+      otpCode,
+      'Gửi lại mã xác thực OTP',
+      'Chúng tôi nhận được yêu cầu gửi lại mã xác thực. Mã mới của bạn là:',
+    );
+
+    return { message: 'Mã OTP mới đã được gửi thành công!' };
   }
 }

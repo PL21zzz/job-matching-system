@@ -48,6 +48,11 @@ export class AuthController {
     return this.authService.verifyRegister(dto);
   }
 
+  @Post('resend-otp')
+  async resendOtp(@Body('email') email: string) {
+    return this.authService.resendOtp(email);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
   async changePassword(@Req() req, @Body() dto: ChangePasswordDto) {

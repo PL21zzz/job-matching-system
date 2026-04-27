@@ -1,10 +1,5 @@
+// Xóa toàn bộ cái đống experimental: { allowedDevOrigins: ... }
 const nextConfig = {
-  devIndicators: {
-    appIsrStatus: false,
-  },
-  experimental: {
-    allowedDevOrigins: ["192.168.196.1:3001"],
-  },
+  /* Để trống hoặc các config khác, xóa cái experimental đi */
 };
-
 export default nextConfig;

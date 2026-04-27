@@ -7,5 +7,5 @@ export class VerifyRegisterDto {
   @IsString()
   @IsNotEmpty()
   @Length(6, 6, { message: 'Mã OTP phải có đúng 6 ký tự' })
-  otp!: string;
+  code!: string;
 }
