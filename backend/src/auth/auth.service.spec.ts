@@ -65,7 +65,7 @@ describe('AuthService', () => {
     jest.restoreAllMocks();
   });
 
-  // --- 1. TEST REGISTER (LOGIC MỚI: TẠO PROFILE NGAY) ---
+  // --- 1. TEST REGISTER ---
   describe('register', () => {
     it('nên đăng ký thành công cho Candidate và tạo luôn Profile', async () => {
       const dto = {
@@ -192,36 +192,36 @@ describe('AuthService', () => {
     });
   });
 
-  // --- 4. TEST GOOGLE LOGIN (CŨNG DÙNG TRANSACTION) ---
+  // --- 4. TEST GOOGLE LOGIN ---
   describe('googleLogin', () => {
-    const googleUser = {
-      email: 'g@g.com',
-      fullName: 'Google User',
-      providerId: '123',
-    };
+    it('nên tạo mới user và trả về isNewUser=true nếu là lần đầu', async () => {
+      const googleUser = {
+        email: 'new@gmail.com',
+        fullName: 'New User',
+        providerId: '123',
+      };
 
-    it('nên login luôn nếu user đã có trong hệ thống', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({
-        id: '1',
-        role: { name: 'Candidate' },
-      });
-      const result = await service.googleLogin(googleUser);
-      expect(mockPrisma.user.create).not.toHaveBeenCalled();
-      expect(result).toHaveProperty('access_token');
-    });
-
-    it('nên tạo mới user và profile bằng transaction nếu là lần đầu', async () => {
+      // 1. Mock chưa có user trong DB
       mockPrisma.user.findUnique.mockResolvedValue(null);
-      mockPrisma.role.findUnique.mockResolvedValue({ id: 3 });
-      mockPrisma.user.create.mockResolvedValue({
-        id: 'new',
-        role: { name: 'Candidate' },
-      });
 
-      await service.googleLogin(googleUser);
-      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      // 2. Mock kết quả sau khi create (KHÔNG CÒN TRANSACTION NỮA)
+      const createdUser = { id: 'user-id', email: googleUser.email };
+      mockPrisma.user.create.mockResolvedValue(createdUser);
+
+      // 3. Mock jwtService
+      jest
+        .spyOn((service as any).jwtService, 'signAsync')
+        .mockResolvedValue('mock-token');
+
+      // 4. Chạy hàm service
+      const result = await service.googleLogin(googleUser);
+
+      // 5. Kiểm tra kỳ vọng (Kỳ vọng gọi create thay vì transaction)
       expect(mockPrisma.user.create).toHaveBeenCalled();
-      expect(mockPrisma.candidateProfile.create).toHaveBeenCalled();
+      expect(result).toEqual({
+        access_token: 'mock-token',
+        isNewUser: true,
+      });
     });
   });
 

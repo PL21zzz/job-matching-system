@@ -9,7 +9,6 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../prisma/prisma.service';
-import { RoleName } from './constants/role.enum';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -172,51 +171,28 @@ export class AuthService {
       include: { role: true },
     });
 
+    let isNewUser = false;
+
     if (!user) {
-      // 1. Tìm role Candidate động
-      const candidateRole = await this.prisma.role.findUnique({
-        where: { name: RoleName.CANDIDATE },
-      });
-
-      // 2. --- VÍT GA TRANSACTION Ở ĐÂY ---
-      user = await this.prisma.$transaction(async (tx) => {
-        // Tạo User trong transaction
-        const newUser = await tx.user.create({
-          data: {
-            email: reqUser.email,
-            fullName: reqUser.fullName,
-            provider: 'google',
-            providerId: reqUser.providerId,
-            status: 'ACTIVE',
-            roleId: candidateRole?.id || 3,
-          },
-          include: { role: true },
-        });
-
-        // Tạo luôn Profile trong transaction
-        await tx.candidateProfile.create({
-          data: { userId: newUser.id },
-        });
-
-        return newUser;
+      isNewUser = true;
+      // Tạo User nhưng chưa tạo Profile ngay vì chưa biết Role
+      user = await this.prisma.user.create({
+        data: {
+          email: reqUser.email,
+          fullName: reqUser.fullName,
+          provider: 'google',
+          providerId: reqUser.providerId,
+          status: 'ACTIVE',
+        },
+        include: { role: true },
       });
     }
 
-    // 3. Logic tạo payload và trả về token (Giữ nguyên)
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role?.name || RoleName.CANDIDATE,
-    };
+    const payload = { sub: user.id, email: user.email, role: user.role?.name };
 
-    // Nếu sếp có hàm getTokens riêng thì gọi, không thì dùng signAsync như cũ
     return {
       access_token: await this.jwtService.signAsync(payload),
-      user: {
-        email: user.email,
-        fullName: user.fullName,
-        role: payload.role,
-      },
+      isNewUser,
     };
   }
 

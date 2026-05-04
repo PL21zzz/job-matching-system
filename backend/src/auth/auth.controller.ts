@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Post,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -63,10 +64,15 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuth(@Req() req) {}
 
+  // backend/src/auth/auth.controller.ts
+
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleAuthRedirect(@Req() req) {
-    return this.authService.googleLogin(req.user);
+  async googleAuthRedirect(@Req() req, @Res() res) {
+    const result = await this.authService.googleLogin(req.user);
+
+    const frontendUrl = `http://localhost:3001/auth-callback?token=${result.access_token}&isNewUser=${result.isNewUser}`;
+    return res.redirect(frontendUrl);
   }
 
   @UseGuards(JwtAuthGuard)
