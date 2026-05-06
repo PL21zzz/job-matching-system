@@ -25,17 +25,28 @@ export default function LoginPage() {
 
       if (response.status === 200 || response.status === 201) {
         toast.success("Đăng nhập thành công! Đang chuyển hướng...");
-
-        const { access_token, user } = response.data;
+        const { access_token } = response.data;
         localStorage.setItem("access_token", access_token);
-
         router.push("/");
       }
     } catch (error: any) {
-      // Bắt lỗi tiếng Việt từ Backend hoặc hiển thị mặc định
       const msg =
         error.response?.data?.message || "Email hoặc mật khẩu không chính xác";
-      toast.error(msg);
+      const cleanMsg = Array.isArray(msg) ? msg[0] : msg;
+
+      if (cleanMsg === "ACCOUNT_NOT_ACTIVATED") {
+        toast.error(
+          "Tài khoản chưa được kích hoạt! Đang chuyển hướng tới trang xác thực...",
+        );
+
+        setTimeout(() => {
+          router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
+        }, 1500);
+
+        return;
+      }
+
+      toast.error(cleanMsg);
     }
   };
 

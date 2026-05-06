@@ -34,27 +34,30 @@ export const RegisterForm = ({
 
   return (
     <div className="animate-in fade-in slide-in-from-right duration-500 flex flex-col justify-center h-full">
-      {/* Nút quay lại */}
+      {/* 1. Nút quay lại */}
       <button
         type="button"
         onClick={onBack}
-        className="flex items-center gap-2 text-primary font-semibold text-sm mb-4 hover:translate-x-1 transition-transform w-fit"
+        className="flex items-center gap-2 text-primary hover:text-primary-hover font-semibold text-sm mb-4 hover:translate-x-1 transition-all w-fit"
       >
         <ArrowLeft size={16} /> Quay lại
       </button>
 
-      {/* Tiêu đề */}
-      <h2 className="text-3xl font-extrabold text-gray-950 mb-1 tracking-tighter leading-tight">
+      {/* 2. Tiêu đề (Tự động đổi màu) */}
+      <h2 className="text-3xl font-extrabold text-gray-950 dark:text-white mb-1 tracking-tighter leading-tight transition-colors">
         Thông tin {selectedRole === "Employer" ? "Doanh nghiệp" : "Cá nhân"}
       </h2>
 
-      {/* Subtitle */}
-      <p className="text-gray-500 mb-5 text-sm">
-        Đăng ký với tư cách: <b className="text-primary">{selectedRole}</b>
+      {/* 3. Subtitle (Việt hóa role cho chuyên nghiệp) */}
+      <p className="text-gray-500 dark:text-gray-400 mb-5 text-sm transition-colors">
+        Đăng ký với tư cách:{" "}
+        <b className="text-primary">
+          {selectedRole === "Employer" ? "Nhà tuyển dụng" : "Ứng viên"}
+        </b>
       </p>
 
       <div className="space-y-3">
-        {/* Ô nhập Tên công ty - CHỈ HIỆN KHI LÀ EMPLOYER */}
+        {/* 4. Ô nhập Tên công ty - CHỈ HIỆN KHI LÀ EMPLOYER */}
         {selectedRole === "Employer" && (
           <div className="animate-in zoom-in duration-300">
             <AuthInput
@@ -66,7 +69,7 @@ export const RegisterForm = ({
           </div>
         )}
 
-        {/* Ô nhập Họ và tên (Dùng AuthInput cho gọn) */}
+        {/* 5. Ô nhập Họ và tên */}
         <AuthInput
           icon={User}
           placeholder={
@@ -76,7 +79,7 @@ export const RegisterForm = ({
           error={errors.fullName?.message}
         />
 
-        {/* Ô nhập Email */}
+        {/* 6. Ô nhập Email */}
         <AuthInput
           icon={Mail}
           placeholder="Địa chỉ Email"
@@ -84,7 +87,7 @@ export const RegisterForm = ({
           error={errors.email?.message}
         />
 
-        {/* Ô nhập Mật khẩu */}
+        {/* 7. Ô nhập Mật khẩu */}
         <div className="relative">
           <AuthInput
             icon={Lock}
@@ -96,13 +99,13 @@ export const RegisterForm = ({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-3.5 text-gray-400 hover:text-primary transition-colors"
+            className="absolute right-4 top-3.5 text-gray-400 dark:text-gray-500 hover:text-primary transition-colors"
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
 
-        {/* Ô nhập lại Mật khẩu */}
+        {/* 8. Ô nhập lại Mật khẩu */}
         <AuthInput
           icon={Lock}
           type={showPassword ? "text" : "password"}
@@ -111,16 +114,18 @@ export const RegisterForm = ({
           error={errors.confirmPassword?.message}
         />
 
+        {/* 9. Nút Submit và Link Đăng nhập */}
         <div className="pt-2">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-lg shadow-primary/25 hover:bg-[#25b5ba] active:scale-[0.98] transition-all disabled:bg-gray-400 text-base"
+            suppressHydrationWarning // Chống lỗi hydration của Next.js
+            className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-lg shadow-primary/25 hover:bg-primary-hover active:scale-[0.98] transition-all disabled:bg-slate-300 dark:disabled:bg-zinc-800 text-base flex items-center justify-center gap-2"
           >
             {isSubmitting ? "Đang xử lý..." : "Đăng ký"}
           </button>
 
-          <p className="text-center text-sm text-gray-500 mt-8">
+          <p className="text-center text-sm text-slate-500 dark:text-gray-400 mt-8 transition-colors">
             Đã có tài khoản?{" "}
             <Link
               href="/login"

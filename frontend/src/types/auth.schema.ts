@@ -40,3 +40,27 @@ export const loginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Vui lòng nhập Email")
+    .email("Email không đúng định dạng"),
+});
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    email: z
+      .string()
+      .min(1, "Vui lòng nhập Email")
+      .email("Email không đúng định dạng"),
+    otp: z.string().min(1, "Vui lòng nhập mã xác thực (OTP)"),
+    newPassword: z.string().min(6, "Mật khẩu mới phải từ 6 ký tự trở lên"),
+    confirmPassword: z.string().min(1, "Vui lòng nhập lại mật khẩu"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Mật khẩu nhập lại không khớp",
+    path: ["confirmPassword"],
+  });
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

@@ -44,6 +44,11 @@ export class AuthController {
     return this.authService.resetPassword(dto);
   }
 
+  @Post('verify-forgot-otp')
+  async verifyForgotOtp(@Body() body: { email: string; code: string }) {
+    return this.authService.verifyForgotOtp(body.email, body.code);
+  }
+
   @Post('verify-register')
   verifyRegister(@Body() dto: VerifyRegisterDto) {
     return this.authService.verifyRegister(dto);

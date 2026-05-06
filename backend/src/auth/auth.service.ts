@@ -125,7 +125,7 @@ export class AuthService {
     };
   }
 
-  // 3. ĐĂNG NHẬP (Fix Payload Role Name)
+  // 3. ĐĂNG NHẬP
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -137,8 +137,11 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }
 
-    // 2. PHẢI CÓ ĐOẠN NÀY: Check tài khoản kích hoạt chưa
-    // Đây chính là chỗ làm con test của bạn bị FAIL
+    if (user.status === 'PENDING') {
+      throw new BadRequestException('ACCOUNT_NOT_ACTIVATED');
+    }
+
+    // 2. Check tài khoản kích hoạt chưa
     if (user.status === 'PENDING') {
       throw new UnauthorizedException('Tài khoản chưa được kích hoạt!');
     }
@@ -240,6 +243,34 @@ export class AuthService {
 
     await this.prisma.otp.delete({ where: { email: dto.email } });
     return { message: 'Đổi mật khẩu thành công!' };
+  }
+
+  async verifyForgotOtp(email: string, code: string) {
+    // 1. Vẫn kiểm tra xem email có tồn tại trong hệ thống không
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Email không tồn tại trong hệ thống');
+    }
+
+    const otpRecord = await this.prisma.otp.findFirst({
+      where: {
+        email: email,
+        code: code,
+      },
+      orderBy: {
+        createdAt: 'desc', // Lấy mã mới nhất được tạo ra
+      },
+    });
+
+    // 3. Kiểm tra xem OTP có tồn tại không và còn hạn (expiresAt) không
+    if (!otpRecord || otpRecord.expiresAt < new Date()) {
+      throw new BadRequestException('Mã OTP không chính xác hoặc đã hết hạn');
+    }
+
+    return { message: 'Mã xác thực chính xác!' };
   }
 
   // 7. ĐỔI MẬT KHẨU (Khi đang login)

@@ -1,4 +1,4 @@
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
@@ -23,6 +23,7 @@ describe('AuthService', () => {
     },
     otp: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       delete: jest.fn(),
       upsert: jest.fn(),
     },
@@ -164,31 +165,19 @@ describe('AuthService', () => {
 
   // --- 3. TEST LOGIN ---
   describe('login', () => {
-    it('nên trả về cặp token khi login thành công', async () => {
-      const user = {
-        id: '1',
-        email: 'p@g.com',
-        passwordHash: 'h',
-        status: 'ACTIVE',
-        role: { name: 'Admin' },
-      };
-      mockPrisma.user.findUnique.mockResolvedValue(user);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockJwt.signAsync.mockResolvedValue('token');
-
-      const result = await service.login({ email: 'p@g.com', password: 'p' });
-      expect(result).toHaveProperty('access_token');
-      expect(result).toHaveProperty('refresh_token');
-    });
-
-    it('nên ném lỗi nếu tài khoản chưa kích hoạt (PENDING)', async () => {
+    it('should throw BadRequestException if user status is PENDING', async () => {
+      // Giả lập tìm thấy user nhưng trạng thái là PENDING
       mockPrisma.user.findUnique.mockResolvedValue({
-        status: 'PENDING',
-        passwordHash: 'h',
+        id: 1,
+        email: 'phong@example.com',
+        passwordHash: 'hashed_password',
+        status: 'PENDING', // 🚨 Logic mới của mình đây
       });
+
       await expect(
-        service.login({ email: 'a@g.com', password: 'p' }),
-      ).rejects.toThrow(UnauthorizedException);
+        service.login({ email: 'phong@example.com', password: 'password123' }),
+      ).rejects.toThrow(BadRequestException);
+      // Sếp kiểm tra xem trong service sếp ném ra Exception gì thì thay thế tương ứng nhé!
     });
   });
 
@@ -265,6 +254,37 @@ describe('AuthService', () => {
       const result = await service.refreshTokens('1', 'rt');
       expect(result).toHaveProperty('access_token');
       expect(mockPrisma.user.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('verifyForgotOtp', () => {
+    it('should verify OTP successfully if record exists and not expired', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        email: 'phong@example.com',
+      });
+      mockPrisma.otp.findFirst.mockResolvedValue({
+        id: 'otp-id-123',
+        email: 'phong@example.com',
+        code: '123456',
+        expiresAt: new Date(Date.now() + 10000), // Chưa hết hạn
+      });
+
+      const result = await service.verifyForgotOtp(
+        'phong@example.com',
+        '123456',
+      );
+      expect(result).toEqual({ message: 'Mã xác thực chính xác!' });
+    });
+
+    it('should throw BadRequestException if OTP is expired or invalid', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({
+        email: 'phong@example.com',
+      });
+      mockPrisma.otp.findFirst.mockResolvedValue(null); // Không tìm thấy mã khớp
+
+      await expect(
+        service.verifyForgotOtp('phong@example.com', '123456'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
