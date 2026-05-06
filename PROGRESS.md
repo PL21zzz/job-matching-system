@@ -1,37 +1,127 @@
-# 🚀 TIẾN ĐỘ DỰ ÁN (PROJECT PROGRESS)
+# PROJECT PROGRESS
 
-**Tên dự án:** Hệ thống hỗ trợ tìm kiếm việc làm cho người khuyết tật ứng dụng trí tuệ nhân tạo (AI-Powered Job Matching System).
-
----
-
-## 🟢 MODULE 1: AUTHENTICATION & AUTHORIZATION (HOÀN THÀNH)
-
-### 1. Hạ tầng & Cơ sở dữ liệu (Database Infrastructure)
-
-- [x] **Database Schema:** Thiết kế cấu trúc Prisma chuẩn với các quan hệ phức tạp: User, Role, Profiles, OTP, DisabilityType.
-- [x] **Database Migration:** Hoàn thành cập nhật cấu hình vật lý cho trường `refreshTokenHash` trong PostgreSQL.
-- [x] **Master Data Automation:** Tự động kiểm tra và nạp dữ liệu chuẩn (Roles, DisabilityTypes) khi hệ thống khởi chạy (`onModuleInit`).
-
-### 2. Luồng nghiệp vụ Xác thực (Authentication Flows)
-
-- [x] **Đăng ký (Register):** Mã hóa mật khẩu (Bcrypt) và xử lý luồng đăng ký theo Role động.
-- [x] **Xác thực OTP (OTP Verification):** Hệ thống tự động sinh mã, gửi Mail (Nodemailer) và kích hoạt trạng thái ACTIVE.
-- [x] **Khởi tạo hồ sơ tự động:** Tự động tạo EmployerProfile hoặc CandidateProfile ngay khi User xác thực thành công.
-- [x] **Đăng nhập đa phương thức:** Hỗ trợ cả đăng nhập truyền thống và Google OAuth.
-- [x] **Quản lý mật khẩu:** Hoàn thiện các tính năng Quên mật khẩu, Đặt lại mật khẩu (OTP) và Đổi mật khẩu.
-
-### 3. Bảo mật & Quản lý phiên (Security & Session Management)
-
-- [x] **JWT Refresh Token Rotation:** Cơ chế xoay vòng Token bảo mật cao, bảo vệ phiên đăng nhập lâu dài.
-- [x] **Phân quyền người dùng (RBAC):** Triển khai RolesGuard để bảo vệ các API đặc thù cho Employer và Candidate.
-- [x] **Đăng xuất (Logout):** Hủy phiên làm việc bằng cách xóa bản băm Token trong Database.
-
-### 4. Kiểm thử chất lượng (Quality Assurance)
-
-- [x] **Unit Testing:** Hoàn thiện bộ Test cho AuthService với **18/18 cases PASS**, bao phủ toàn bộ các trường hợp thành công và xử lý lỗi ngoại lệ.
+**Tên dự án:** Hệ thống hỗ trợ tìm kiếm việc làm cho người khuyết tật ứng dụng trí tuệ nhân tạo (Equitas AI / Inclusive AI Job Matching System)
 
 ---
 
-### 📅 Cập nhật lần cuối: 15/04/2026
+## 1. Module 1: Authentication & Authorization (100% - Production Ready)
 
-\*Trạng thái Module 1: **100% Hoàn thành (Production Ready)\***
+### 1.1. Hạ tầng & Cơ sở dữ liệu
+
+- [x] Database Schema: Thiết kế Prisma với các bảng User, Role, Profiles, OTP, DisabilityType
+- [x] Database Migration: Cập nhật trường refreshTokenHash (PostgreSQL)
+- [x] Master Data Automation: Auto seed Roles & DisabilityTypes (onModuleInit)
+- [x] Tách bảng OTP: Tối ưu bảo mật và hiệu năng
+
+### 1.2. Authentication Flows
+
+- [x] Register: Hash mật khẩu (Bcrypt), xử lý Role
+- [x] OTP Verification: Sinh mã, gửi mail (Nodemailer), ACTIVE user
+- [x] Auto Profile Creation: EmployerProfile / CandidateProfile
+- [x] Multi-login: Traditional + Google OAuth
+- [x] Password Management: Forgot / Reset / Change Password
+- [x] OTP Flow Optimization:
+      `/forgot-password -> /verify-otp -> /reset-password`
+
+### 1.3. UI/UX & Frontend
+
+- [x] Auth Layout: Split screen (Illustration + Form)
+- [x] Tailwind CSS v4: Config trực tiếp trong globals.css
+- [x] Theme Toggle: Light/Dark (next-themes)
+- [x] Fix Hydration Errors: Autofill + SVG mismatch
+
+### 1.4. Quality Assurance
+
+- [x] Unit Test (Service): Full cases (including PENDING)
+- [x] Unit Test (Controller): API correctness
+- [x] 100% Test Cases Pass
+
+---
+
+## 2. Module 2: Candidate Onboarding & Disability Profile (Next)
+
+**Mục tiêu:** Hoàn thiện hồ sơ người dùng
+
+- [ ] Role-based Onboarding
+
+  **Candidate:**
+  - Thông tin cá nhân, học vấn, kinh nghiệm
+  - Kỹ năng
+  - Disability Type
+  - Accommodations (wheelchair, screen reader, flexible time, ...)
+
+  **Employer:**
+  - Thông tin công ty
+  - Quy mô, MST, website
+  - Upload giấy phép kinh doanh
+
+- [ ] Upload & Parse CV (PDF/DOCX)
+- [ ] Accessibility Form (ARIA + keyboard support)
+
+---
+
+## 3. Module 3: Job Management & Accessibility Search (Next)
+
+**Mục tiêu:** Đăng tin và tìm việc hiệu quả
+
+- [ ] Job Posting (Employer)
+  - CRUD: Title, Description, Requirement, Salary, Location
+  - Accessibility Tags:
+    - Wheelchair accessible
+    - Sign language support
+    - Remote 100%
+
+- [ ] Smart Search (Candidate)
+  - Keyword, ngành, lương
+  - Filter theo disability compatibility
+
+---
+
+## 4. Module 4: AI Resume Parsing & Job Matching (Core)
+
+**Mục tiêu:** Ứng dụng AI
+
+- [ ] AI Resume Parser (NestJS + AI API)
+  - Extract: Skills, Experience, Education
+
+- [ ] AI Matching Engine
+  - Match CV với Job Description
+  - Scoring (%)
+  - Đánh giá môi trường phù hợp
+
+- [ ] AI CV Feedback
+  - Gợi ý cải thiện CV
+  - Tăng tỷ lệ match
+
+---
+
+## 5. Module 5: Application & Interview Workflow
+
+**Mục tiêu:** Quản lý quy trình tuyển dụng
+
+- [ ] Apply Job (CV + Cover Letter - AI hỗ trợ)
+
+- [ ] Employer Dashboard
+  - Danh sách ứng viên + Match %
+  - Trạng thái:
+    - Pending -> Interview -> Hired -> Rejected
+
+- [ ] Interview Scheduling (Online/Offline)
+- [ ] Realtime Notification (WebSocket)
+
+---
+
+## 6. Module 6: Accessibility & Inclusive Experience
+
+**Mục tiêu:** Tăng khả năng tiếp cận
+
+- [ ] Text-to-Speech
+- [ ] Keyboard Navigation
+- [ ] Screen Reader Support (JAWS, NVDA, VoiceOver)
+
+---
+
+## Progress Summary
+
+- Module 1: 100% (Production Ready)
+- Total Project Progress: ~20%
