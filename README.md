@@ -1,4 +1,4 @@
-# 🌟 Hệ Thống Hỗ Trợ Tìm Kiếm Việc Làm Cho Người Khuyết Tật (AI-Powered)
+# 🌟 Hệ Thống Hỗ Trợ Tìm Kiếm Việc Làm Cho Người Khuyết Tật (AI-Powered Job Search Support System for People with Disabilities)
 
 Một nền tảng toàn diện (Web & Mobile) ứng dụng Trí tuệ nhân tạo (AI) nhằm xóa bỏ rào cản tìm việc cho người khuyết tật, đồng thời giúp doanh nghiệp tiếp cận nguồn nhân lực đặc thù một cách hiệu quả.
 

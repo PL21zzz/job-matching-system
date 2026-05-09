@@ -50,21 +50,22 @@ model Otp {
   @@map("otps")
 }
 
-// 4. Hồ sơ Ứng viên (Dành cho người khuyết tật)
+// 4. Hồ sơ Ứng viên
 model CandidateProfile {
-  id                 String          @id @default(uuid())
-  userId             String          @unique @map("user_id")
-  user               User            @relation(fields: [userId], references: [id])
-  dob                DateTime?
-  phone              String?
-  address            String?
-  disabilityTypeId   Int?            @map("disability_type_id")
-  disabilityType     DisabilityType? @relation(fields: [disabilityTypeId], references: [id])
+  id                String          @id @default(uuid())
+  userId            String          @unique @map("user_id")
+  user              User            @relation(fields: [userId], references: [id])
+  dob               DateTime?
+  phone             String?
+  address           String?
+  disabilityTypeId  Int?            @map("disability_type_id")
+  disabilityType    DisabilityType? @relation(fields: [disabilityTypeId], references: [id])
+  applications      Application[]
 
   @@map("candidate_profiles")
 }
 
-// 5. Hồ sơ Nhà tuyển dụng
+// 5. Hồ sơ Nhà tuyển dụng (Cập nhật: Thêm quan hệ với Job)
 model EmployerProfile {
   id                    String  @id @default(uuid())
   userId                String  @unique @map("user_id")
@@ -74,6 +75,7 @@ model EmployerProfile {
   description           String?
   address               String?
   accessibilityFeatures String? @map("accessibility_features")
+  jobs                  Job[]
 
   @@map("employer_profiles")
 }
@@ -86,4 +88,83 @@ model DisabilityType {
   candidateProfiles CandidateProfile[]
 
   @@map("disability_types")
+}
+
+// 7. Ngành nghề (IT, Thiết kế, Marketing...)
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  jobs  Job[]
+
+  @@map("categories")
+}
+
+// 8. Tin tuyển dụng
+model Job {
+  id            String   @id @default(uuid())
+  title         String
+  description   String   @db.Text
+  requirements  String   @db.Text
+
+  // Lương: Tách min/max để AI tính toán và người dùng lọc (Filter)
+  salaryMin     Int?     @map("salary_min")
+  salaryMax     Int?     @map("salary_max")
+  salaryText    String?  @map("salary_text") // "15 - 25 Triệu"
+
+  location      String
+  type          String   @default("FULL_TIME") // FULL_TIME, PART_TIME, REMOTE
+  status        String   @default("OPEN")      // OPEN, CLOSED
+
+  // Tiện ích hỗ trợ người khuyết tật cho CÔNG VIỆC NÀY
+  // Ví dụ: "Xe lăn, Trình đọc màn hình, Ngôn ngữ ký hiệu"
+  accessibilityFeatures String? @map("accessibility_features")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Quan hệ
+  employerId    String   @map("employer_id")
+  employer      EmployerProfile @relation(fields: [employerId], references: [id])
+
+  categoryId    Int      @map("category_id")
+  category      Category @relation(fields: [categoryId], references: [id])
+
+  applications  Application[]
+
+  @@map("jobs")
+}
+
+// 9. Đơn ứng tuyển
+model Application {
+  id          String   @id @default(uuid())
+  candidateId String   @map("candidate_id")
+  candidate   CandidateProfile @relation(fields: [candidateId], references: [id])
+
+  jobId       String   @map("job_id")
+  job         Job      @relation(fields: [jobId], references: [id])
+
+  status      String   @default("APPLIED") // APPLIED, REVIEWING, INTERVIEW, ACCEPTED, REJECTED
+
+  // Điểm số tương thích do AI chấm
+  matchScore  Float?   @map("match_score")
+
+  appliedAt   DateTime @default(now()) @map("applied_at")
+
+  @@map("applications")
+}
+
+// 10. Câu chuyện thành công (Testimonials)
+model Testimonial {
+  id          String   @id @default(uuid())
+  content     String   @db.Text
+  authorName  String   @map("author_name")
+  authorRole  String   @map("author_role") // Ví dụ: Software Engineer, HR Manager
+  avatarUrl   String?  @map("avatar_url")   // Link ảnh đại diện người chia sẻ
+
+  // Sếp thêm trường này để chọn lọc câu chuyện nào đẹp nhất hiện lên trang chủ
+  isFeatured  Boolean  @default(false) @map("is_featured")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("testimonials")
 }

@@ -6,7 +6,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-white dark:bg-[#030712] transition-colors duration-300">
+    <div className="flex min-h-screen bg-white dark:bg-secondary transition-colors duration-300">
       {/* 🟢 PANEL TRÁI: TỰ ĐỘNG ĐỔI TONE SÁNG / TỐI */}
       <div className="hidden lg:flex fixed left-0 top-0 h-full w-1/2 bg-[#f8fafc] dark:bg-[#060b13] items-center justify-center p-16 border-r border-slate-200/50 dark:border-white/5 transition-colors duration-300">
         <div className="max-w-md text-left flex flex-col items-start w-full">
@@ -25,7 +25,7 @@ export default function AuthLayout({
             {/* Hiệu ứng glow mờ chỉ xuất hiện ở Dark Mode */}
             <div className="absolute inset-0 bg-primary/5 dark:bg-primary/5 blur-xl group-hover:bg-primary/10 transition-all duration-500" />
             <img
-              src="https://res.cloudinary.com/dypm5avrx/image/upload/v1778034989/1a1d336a-f4f8-4da9-b4b5-97ff4dd42036.png"
+              src="https://res.cloudinary.com/dypm5avrx/image/upload/v1776512351/Screenshot_2026-04-18_183823_lnqmy9.png"
               alt="Illustration"
               className="w-full h-full object-cover relative z-10"
             />
@@ -45,7 +45,7 @@ export default function AuthLayout({
       </div>
 
       {/* 🔵 PANEL PHẢI: NƠI CHỨA FORM */}
-      <div className="w-full lg:w-1/2 lg:ml-[50%] flex items-center justify-center p-8 md:p-16 bg-slate-50/50 dark:bg-[#030712] transition-colors duration-300">
+      <div className="w-full lg:w-1/2 lg:ml-[50%] flex items-center justify-center p-8 md:p-16 bg-slate-50/50 dark:bg-secondary transition-colors duration-300">
         <div className="w-full max-w-md bg-white dark:bg-[#0b0f19] p-10 md:p-12 rounded-3xl shadow-sm dark:shadow-2xl border border-slate-100 dark:border-white/5 transition-colors duration-300">
           {children}
         </div>

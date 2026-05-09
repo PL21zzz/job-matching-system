@@ -28,6 +28,7 @@ export default function FAQ() {
           >
             <button
               onClick={() => setOpenFaq(openFaq === index ? null : index)}
+              suppressHydrationWarning
               className="w-full p-6 text-left font-bold text-slate-900 dark:text-white flex justify-between items-center gap-4 hover:bg-slate-50 dark:hover:bg-white/1"
             >
               <span>{faq.q}</span>

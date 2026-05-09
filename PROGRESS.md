@@ -1,62 +1,58 @@
 # PROJECT PROGRESS
 
-**Tên dự án:** Hệ thống hỗ trợ tìm kiếm việc làm cho người khuyết tật ứng dụng trí tuệ nhân tạo (Equitas AI / Inclusive AI Job Matching System)
+**Tên dự án:** Hệ thống hỗ trợ tìm kiếm việc làm cho người khuyết tật ứng dụng trí tuệ nhân tạo (AI-Powered Job Search Support System for People with Disabilities)
 
 ---
 
-## 1. Module 1: Authentication & Authorization (100% - Production Ready)
+## 1. Module 1: Authentication & Authorization (HOÀN THÀNH)
 
 ### 1.1. Hạ tầng & Cơ sở dữ liệu
 
-- [x] Database Schema: Thiết kế Prisma với các bảng User, Role, Profiles, OTP, DisabilityType
-- [x] Database Migration: Cập nhật trường refreshTokenHash (PostgreSQL)
-- [x] Master Data Automation: Auto seed Roles & DisabilityTypes (onModuleInit)
-- [x] Tách bảng OTP: Tối ưu bảo mật và hiệu năng
+- Database Schema: Thiết kế Prisma với các bảng User, Role, Profiles, OTP, DisabilityType
+- Database Migration: Cập nhật trường refreshTokenHash (PostgreSQL)
+- Master Data Automation: Auto seed Roles & DisabilityTypes (onModuleInit)
+- Tách bảng OTP: Tối ưu bảo mật và hiệu năng
 
 ### 1.2. Authentication Flows
 
-- [x] Register: Hash mật khẩu (Bcrypt), xử lý Role
-- [x] OTP Verification: Sinh mã, gửi mail (Nodemailer), ACTIVE user
-- [x] Auto Profile Creation: EmployerProfile / CandidateProfile
-- [x] Multi-login: Traditional + Google OAuth
-- [x] Password Management: Forgot / Reset / Change Password
-- [x] OTP Flow Optimization:
-      `/forgot-password -> /verify-otp -> /reset-password`
+- Register: Hash mật khẩu (Bcrypt), xử lý Role
+- OTP Verification: Sinh mã, gửi mail (Nodemailer), ACTIVE user
+- Auto Profile Creation: EmployerProfile / CandidateProfile
+- Multi-login: Traditional + Google OAuth
+- Password Management: Forgot / Reset / Change Password
+- OTP Flow Optimization:
+  `/forgot-password -> /verify-otp -> /reset-password`
 
 ### 1.3. UI/UX & Frontend
 
-- [x] Auth Layout: Split screen (Illustration + Form)
-- [x] Tailwind CSS v4: Config trực tiếp trong globals.css
-- [x] Theme Toggle: Light/Dark (next-themes)
-- [x] Fix Hydration Errors: Autofill + SVG mismatch
+- Auth Layout: Split screen (Illustration + Form)
+- Tailwind CSS v4: Config trực tiếp trong globals.css
+- Theme Toggle: Light/Dark (next-themes)
+- Fix Hydration Errors: Autofill + SVG mismatch
 
 ### 1.4. Quality Assurance
 
-- [x] Unit Test (Service): Full cases (including PENDING)
-- [x] Unit Test (Controller): API correctness
-- [x] 100% Test Cases Pass
+- Unit Test (Service): Full cases (including PENDING)
+- Unit Test (Controller): API correctness
+- 100% Test Cases Pass
 
 ---
 
-## 2. Module 2: Candidate Onboarding & Disability Profile (Next)
+## 2. Module 2: PUBLIC UI & FRONTEND FOUNDATION (ĐANG THỰC HIỆN)
 
-**Mục tiêu:** Hoàn thiện hồ sơ người dùng
+**Mục tiêu:** Xây dựng bộ mặt của hệ thống, tối ưu SEO và trải nghiệm người dùng vãng lai.
 
-- [ ] Role-based Onboarding
+- Cấu trúc Route Group (public): Tách biệt hoàn toàn Layout trang chủ với Layout Auth để tránh chồng chéo giao diện.
 
-  **Candidate:**
-  - Thông tin cá nhân, học vấn, kinh nghiệm
-  - Kỹ năng
-  - Disability Type
-  - Accommodations (wheelchair, screen reader, flexible time, ...)
+- Modular Homepage: Phân rã trang chủ 1000 dòng thành các Section độc lập (Hero, Stats, FeaturedJobs, FAQ...) để dễ bảo trì.
 
-  **Employer:**
-  - Thông tin công ty
-  - Quy mô, MST, website
-  - Upload giấy phép kinh doanh
+- Hệ thống Design System (Tailwind v4): Định nghĩa bộ màu primary, secondary, surface trong globals.css để đồng bộ UI toàn hệ thống.
 
-- [ ] Upload & Parse CV (PDF/DOCX)
-- [ ] Accessibility Form (ARIA + keyboard support)
+- Trang Danh sách việc làm (Public Jobs): Giao diện cho phép khách xem danh sách công việc mà không cần đăng nhập.
+
+- Trang Chi tiết việc làm (Job Detail): Hiển thị mô tả công việc và các tiện ích hỗ trợ người khuyết tật.
+
+- Trang Giới thiệu (About Us) & Chính sách: Các trang thông tin bổ trợ cho hệ thống.
 
 ---
 
