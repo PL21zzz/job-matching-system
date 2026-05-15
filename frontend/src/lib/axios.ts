@@ -40,16 +40,15 @@ api.interceptors.response.use(
 
         return api(originalRequest);
       } catch (err) {
-        // 🚨 CHỈ XÓA TOKEN, KHÔNG DÙNG .clear() ĐỂ GIỮ THEME
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
 
-        if (
-          typeof window !== "undefined" &&
-          window.location.pathname !== "/login"
-        ) {
-          window.location.href = "/login";
-        }
+        // if (
+        //   typeof window !== "undefined" &&
+        //   window.location.pathname !== "/login"
+        // ) {
+        //   window.location.href = "/login";
+        // }
         return Promise.reject(err);
       }
     }

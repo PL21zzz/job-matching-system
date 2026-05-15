@@ -34,7 +34,8 @@ export const Navbar = () => {
           const response = await api.get("/auth/me");
           setAuth(response.data);
         } catch (error: any) {
-          if (error.response?.status === 401) logout();
+          // if (error.response?.status === 401)
+          logout();
         }
       }
     };
