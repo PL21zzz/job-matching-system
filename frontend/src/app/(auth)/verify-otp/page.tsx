@@ -103,7 +103,7 @@ function VerifyOtpContent() {
         if (response.status === 200 || response.status === 201) {
           toast.success("Xác thực thành công! Đang chuyển hướng...");
           localStorage.removeItem("register_email");
-          router.push("/");
+          router.push("/profile/edit");
         }
       }
     } catch (error: any) {

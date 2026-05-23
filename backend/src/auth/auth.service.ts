@@ -290,18 +290,7 @@ export class AuthService {
     return { message: 'Đổi mật khẩu thành công!' };
   }
 
-  // 8. LẤY THÔNG TIN CÁ NHÂN
-  async getMe(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { role: true, candidateProfile: true, employerProfile: true },
-    });
-    if (!user) throw new NotFoundException('User không tồn tại!');
-    const { passwordHash, ...result } = user;
-    return result;
-  }
-
-  // 9. Hàm tạo cặp Token
+  // 8. Hàm tạo cặp Token
   async getTokens(userId: string, email: string, role: string) {
     const [at, rt] = await Promise.all([
       this.jwtService.signAsync(
@@ -317,7 +306,7 @@ export class AuthService {
     return { access_token: at, refresh_token: rt };
   }
 
-  // 10. Hàm lưu RT vào DB
+  // 9. Hàm lưu RT vào DB
   async updateRefreshTokenHash(userId: string, rt: string) {
     const hash = await bcrypt.hash(rt, 10);
     await this.prisma.user.update({
@@ -326,7 +315,7 @@ export class AuthService {
     });
   }
 
-  // 11. Hàm Refresh Token
+  // 10. Hàm Refresh Token
   async refreshTokens(userId: string, rt: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -354,7 +343,7 @@ export class AuthService {
     return tokens;
   }
 
-  // 12. Hàm đăng xuất
+  // 11. Hàm đăng xuất
   async logout(userId: string) {
     await this.prisma.user.update({
       where: { id: userId },

@@ -25,16 +25,15 @@ export const Navbar = () => {
 
   const { user, isAuthenticated, setAuth, logout } = useAuthStore();
 
-  // Đồng bộ thông tin User từ DB khi vào trang
+  // 同 bộ thông tin User từ DB khi vào trang
   useEffect(() => {
     const syncAuth = async () => {
       const token = localStorage.getItem("access_token");
       if (token && !isAuthenticated) {
         try {
-          const response = await api.get("/auth/me");
+          const response = await api.get("/users/profile/me");
           setAuth(response.data);
         } catch (error: any) {
-          // if (error.response?.status === 401)
           logout();
         }
       }

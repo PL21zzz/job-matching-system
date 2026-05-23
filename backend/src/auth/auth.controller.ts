@@ -80,12 +80,6 @@ export class AuthController {
     return res.redirect(frontendUrl);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  async getMe(@Req() req) {
-    return this.authService.getMe(req.user.sub);
-  }
-
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('Employer')
   @Get('employer-only')
