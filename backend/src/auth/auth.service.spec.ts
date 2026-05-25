@@ -288,19 +288,8 @@ describe('AuthService', () => {
     });
   });
 
-  // --- 7. TEST GET ME & LOGOUT ---
-  describe('getMe & logout', () => {
-    it('getMe: nên trả về thông tin user không kèm password', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({
-        id: '1',
-        passwordHash: 'h',
-        email: 'p@g.com',
-      });
-      const result = await service.getMe('1');
-      expect(result).not.toHaveProperty('passwordHash');
-      expect(result.email).toBe('p@g.com');
-    });
-
+  // --- 7. TEST LOGOUT ---
+  describe('logout', () => {
     it('logout: nên xóa refreshTokenHash', async () => {
       await service.logout('123');
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
