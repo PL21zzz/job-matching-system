@@ -77,7 +77,7 @@ export const Navbar = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200/50 dark:border-white/5 bg-white/80 dark:bg-secondary/80 backdrop-blur-md transition-all">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200/50 dark:border-white/5 bg-slate-50 dark:bg-surface backdrop-blur-md transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 z-50">
           <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
