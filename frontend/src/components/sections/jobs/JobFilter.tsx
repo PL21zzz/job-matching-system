@@ -1,58 +1,97 @@
 import { ACCESSIBILITY_OPTIONS } from "@/src/constants/jobs";
 import { Filter } from "lucide-react";
 
-const JobFilter = () => {
+interface JobFilterProps {
+  filters: any;
+  setFilters: (filters: any) => void;
+}
+
+const JobFilter = ({ filters, setFilters }: JobFilterProps) => {
+  // Hàm xử lý khi bấm tích chọn tiện ích trợ năng
+  const handleAccessibilityChange = (option: string) => {
+    // Nếu tuỳ chọn đã click rồi thì bỏ click (chuỗi rỗng), ngược lại thì gán chuỗi để lọc
+    setFilters({
+      ...filters,
+      accessibility: filters.accessibility === option ? "" : option,
+    });
+  };
+
+  // Hàm xóa sạch các bộ lọc về trạng thái ban đầu
+  const handleClearAll = () => {
+    setFilters({
+      search: "",
+      location: "",
+      categoryId: "",
+      accessibility: "",
+    });
+  };
+
   return (
     <div className="sticky top-28 p-8 rounded-3xl bg-slate-50/50 dark:bg-surface border border-slate-100 dark:border-white/5 space-y-8">
       <div className="flex items-center justify-between">
         <h3 className="font-bold text-lg flex items-center gap-2">
           <Filter size={18} className="text-primary" /> Bộ lọc
         </h3>
-        <button className="text-xs font-bold text-primary hover:underline">
+        <button
+          onClick={handleClearAll}
+          className="text-xs font-bold text-primary hover:underline"
+        >
           Xóa tất cả
         </button>
       </div>
 
       <div className="space-y-8">
-        {/* Dạng khuyết tật */}
+        {/* Dạng khuyết tật hỗ trợ (Tạm thời map giao diện, sếp có thể nâng cấp gắn categoryId tại đây) */}
         <div>
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">
-            Dạng khuyết tật hỗ trợ
+            Ngành nghề ứng tuyển
           </p>
           <div className="space-y-3">
-            {["Vận động", "Khiếm thính", "Khiếm thị", "Khác"].map((item) => (
-              <label
-                key={item}
-                className="flex items-center gap-3 cursor-pointer group"
-              >
-                <div className="w-5 h-5 border-2 border-slate-200 dark:border-white/10 rounded-md flex items-center justify-center group-hover:border-primary transition-colors bg-white dark:bg-secondary">
-                  <div className="w-2 h-2 bg-primary rounded-sm opacity-0 group-hover:opacity-20" />
-                </div>
-                <span className="text-sm font-bold text-slate-600 dark:text-gray-400 group-hover:text-primary transition-colors">
-                  {item}
-                </span>
-              </label>
-            ))}
+            {/* Sử dụng thẻ select hoặc danh sách cứng để lọc nhanh categoryId */}
+            <select
+              value={filters.categoryId}
+              onChange={(e) =>
+                setFilters({ ...filters, categoryId: e.target.value })
+              }
+              className="w-full p-3 rounded-xl bg-white dark:bg-secondary border border-slate-200 dark:border-white/10 text-sm font-bold outline-none text-slate-700 dark:text-gray-300"
+            >
+              <option value="">Tất cả ngành nghề</option>
+              <option value="1">Công nghệ thông tin</option>
+              <option value="2">Thiết kế đồ họa</option>
+              <option value="3">Marketing</option>
+            </select>
           </div>
         </div>
 
-        {/* Tiện ích trợ năng */}
+        {/* Tiện ích trợ năng đặc thù cho người khuyết tật */}
         <div>
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">
-            Tiện ích trợ năng
+            Tiện ích trợ năng đặc thù
           </p>
           <div className="space-y-3">
-            {ACCESSIBILITY_OPTIONS.map((option) => (
-              <label
-                key={option}
-                className="flex items-center gap-3 cursor-pointer group"
-              >
-                <div className="w-5 h-5 border-2 border-slate-200 dark:border-white/10 rounded-md flex items-center justify-center group-hover:border-primary transition-colors bg-white dark:bg-secondary" />
-                <span className="text-sm font-bold text-slate-600 dark:text-gray-400 group-hover:text-primary transition-colors">
-                  {option}
-                </span>
-              </label>
-            ))}
+            {ACCESSIBILITY_OPTIONS.map((option) => {
+              const isChecked = filters.accessibility === option;
+              return (
+                <label
+                  key={option}
+                  onClick={() => handleAccessibilityChange(option)}
+                  className="flex items-center gap-3 cursor-pointer group"
+                >
+                  <div
+                    className={`w-5 h-5 border-2 rounded-md flex items-center justify-center transition-colors bg-white dark:bg-secondary ${isChecked ? "border-primary" : "border-slate-200 dark:border-white/10 group-hover:border-primary"}`}
+                  >
+                    <div
+                      className={`w-2 h-2 bg-primary rounded-sm transition-opacity ${isChecked ? "opacity-100" : "opacity-0 group-hover:opacity-20"}`}
+                    />
+                  </div>
+                  <span
+                    className={`text-sm font-bold transition-colors ${isChecked ? "text-primary" : "text-slate-600 dark:text-gray-400 group-hover:text-primary"}`}
+                  >
+                    {option}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         </div>
       </div>

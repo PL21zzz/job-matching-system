@@ -3,7 +3,6 @@
 import EmployerComparison from "@/src/components/sections/employer/EmployerComparison";
 import EmployerFeatures from "@/src/components/sections/employer/EmployerFeatures";
 import EmployerHero from "@/src/components/sections/employer/EmployerHero";
-import EmployerPricing from "@/src/components/sections/employer/EmployerPricing";
 import EmployerSteps from "@/src/components/sections/employer/EmployerSteps";
 
 export default function EmployerPage() {
@@ -13,7 +12,6 @@ export default function EmployerPage() {
       <EmployerComparison />
       <EmployerFeatures />
       <EmployerSteps />
-      <EmployerPricing />
     </div>
   );
 }

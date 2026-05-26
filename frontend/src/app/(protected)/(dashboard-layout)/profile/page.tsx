@@ -1,6 +1,6 @@
 "use client";
 
-import api from "@/src/lib/axios";
+import { authService } from "@/src/services/authService";
 import {
   Accessibility,
   Building2,
@@ -28,32 +28,52 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
+        // Tận dụng lại hàm giải mã base64 có sẵn trong máy sếp (hoặc bốc từ Zustand nếu thích)
         const token = localStorage.getItem("access_token");
         let userRole = "";
+
         if (token) {
-          const payload = JSON.parse(window.atob(token.split(".")[1]));
-          setRole(payload.role);
-          userRole = payload.role;
+          try {
+            const base64Url = token.split(".")[1];
+            const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+            const payload = JSON.parse(window.atob(base64));
+            setRole(payload.role);
+            userRole = payload.role;
+          } catch (e) {
+            console.error("Lỗi giải mã token tại profile:", e);
+          }
         }
 
-        const response = await api.get("/users/profile/me");
-        const data = response.data;
+        // 🔥 THAY ĐỔI CỐT LÕI: Gọi qua service chuyên nghiệp, lấy luôn DATA SẠCH
+        const data: any = await authService.getProfileMe();
+
+        if (!data) {
+          setIsProfileEmpty(true);
+          return;
+        }
+
         setProfile(data);
 
+        // Bọc dấu ? an toàn để DB trống trải cũng không bao giờ crash giao diện
         if (userRole === "Candidate") {
-          const cp = data.candidateProfile;
-          if (!cp || !cp.dob || !cp.phone || !cp.address)
+          const cp = data?.candidateProfile;
+          if (!cp || !cp.dob || !cp.phone || !cp.address) {
             setIsProfileEmpty(true);
-        } else if (userRole === "Employer") {
-          const ep = data.employerProfile;
-          if (!ep || !ep.companyName || !ep.taxCode) setIsProfileEmpty(true);
+          }
+        } else if (userRole === "Employer" || userRole === "EMPLOYER") {
+          const ep = data?.employerProfile;
+          if (!ep || !ep.companyName || !ep.taxCode) {
+            setIsProfileEmpty(true);
+          }
         }
       } catch (error) {
         console.error("Lỗi đồng bộ hồ sơ:", error);
+        setIsProfileEmpty(true);
       } finally {
         setLoading(false);
       }
     };
+
     fetchProfileData();
   }, []);
 

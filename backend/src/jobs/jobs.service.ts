@@ -10,6 +10,14 @@ import { CreateJobDto } from './dto/create-job.dto';
 export class JobsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findAllCategories() {
+    return await this.prisma.category.findMany({
+      orderBy: {
+        id: 'asc',
+      },
+    });
+  }
+
   async createJob(userId: string, dto: CreateJobDto) {
     // 1. Kiểm tra xem tài khoản này đã cấu hình Hồ sơ doanh nghiệp chưa
     const employerProfile = await this.prisma.employerProfile.findUnique({

@@ -1,7 +1,8 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "react-hot-toast";
 
 export default function ProtectedLayout({
   children,
@@ -12,10 +13,11 @@ export default function ProtectedLayout({
   const pathname = usePathname();
   const [isVerified, setIsVerified] = useState(false);
 
+  const hasToasted = useRef(false);
+
   useEffect(() => {
     const token = localStorage.getItem("access_token");
 
-    // Hàm giải mã token lấy thông tin Role tự động
     const getRoleFromToken = (tokenStr: string | null) => {
       if (!tokenStr) return null;
       try {
@@ -29,25 +31,44 @@ export default function ProtectedLayout({
 
     const userRole = getRoleFromToken(token);
 
-    // 1. Trường hợp chưa đăng nhập (Không có token trong máy)
+    // 1. Chưa đăng nhập
     if (!token) {
       router.replace("/login");
     }
-    // 2. Tài khoản Google mới (Có token nhưng role = null) -> Ép phải ở lại trang Onboarding
+    // 2. Tài khoản Google mới chưa onboarding
     else if (token && !userRole && pathname !== "/onboarding") {
       router.replace("/onboarding");
     }
-    // 3. Tài khoản cũ đã cấu hình đầy đủ (Role hợp lệ) nhưng lại cố tình vào lại Onboarding
+    // 3. Đã có role nhưng cố tình vào lại onboarding
     else if (token && userRole && pathname === "/onboarding") {
       router.replace("/");
+    }
+    // 4. CHẶN ỨNG VIÊN - PHIÊN BẢN TỐI ƯU CHỐNG SPAM TOAST
+    else if (
+      token &&
+      userRole?.toLowerCase() === "candidate" &&
+      pathname.includes("/employer")
+    ) {
+      if (!hasToasted.current) {
+        toast.error(
+          "Bạn không phải là nhà tuyển dụng! Không thể truy cập khu vực này.",
+        );
+        hasToasted.current = true;
+      }
+
+      if (typeof window !== "undefined" && window.history.length > 1) {
+        router.back();
+      } else {
+        router.replace("/");
+      }
     }
     // Đã qua các vòng kiểm tra -> Hợp lệ hoàn toàn
     else {
       setIsVerified(true);
+      hasToasted.current = false;
     }
   }, [pathname, router]);
 
-  // Hiển thị vòng xoay loading trong lúc check quyền, tránh giật giao diện
   if (!isVerified) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-secondary">

@@ -17,6 +17,11 @@ import { JobsService } from './jobs.service';
 export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
+  @Get('categories')
+  async getCategories() {
+    return await this.jobsService.findAllCategories();
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post()
   async createJob(@Req() req: any, @Body() createJobDto: CreateJobDto) {
