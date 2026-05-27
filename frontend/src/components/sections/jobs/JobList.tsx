@@ -1,3 +1,5 @@
+"use client";
+
 import { ChevronDown, Loader2, MapPin, Sparkles, Users } from "lucide-react";
 
 interface JobListProps {
@@ -89,6 +91,21 @@ const JobList = ({ jobs, loading }: JobListProps) => {
                   </span>
                 </div>
               </div>
+
+              {/* 🔥 KHỐI MỚI CHÈN VÀO ĐÂY: HIỂN THỊ CÁC TAG LOẠI KHUYẾT TẬT ĐỐI TƯỢNG */}
+              {job?.suitableDisabilities &&
+                job.suitableDisabilities.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3 animate-in fade-in duration-200">
+                    {job.suitableDisabilities.map((disability: any) => (
+                      <span
+                        key={disability.id}
+                        className="px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/30 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 select-none"
+                      >
+                        🤝 {disability.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
 
               {/* Tách chuỗi trợ năng từ DB thành từng hashtag hiển thị */}
               <div className="flex flex-wrap gap-2 mb-8">

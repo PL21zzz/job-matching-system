@@ -1,7 +1,15 @@
 "use client";
 
-import api from "@/src/lib/axios";
-import { ArrowLeft, Image as ImageIcon, Save, Sparkles } from "lucide-react";
+import { authService } from "@/src/services/authService";
+import { jobService } from "@/src/services/jobService";
+import {
+  Accessibility,
+  ArrowLeft,
+  ChevronDown,
+  Image as ImageIcon,
+  Save,
+  Sparkles,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -12,12 +20,17 @@ export default function ProfileEditPage() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
+  // States lưu trữ danh mục loại khuyết tật từ Database
+  const [disabilityTypes, setDisabilityTypes] = useState<any[]>([]);
+
   // States lưu trữ thông tin thực tế từ DB
   const [fullName, setFullName] = useState("");
   const [candidateData, setCandidateData] = useState({
     dob: "",
     phone: "",
     address: "",
+    disabilityTypeId: "",
+    customDisabilityName: "",
   });
   const [employerData, setEmployerData] = useState({
     companyName: "",
@@ -27,7 +40,6 @@ export default function ProfileEditPage() {
     accessibilityFeatures: "",
   });
 
-  // 1. Khối useEffect Độc lập: Phân tích Role từ Token và gọi API đổ ngược dữ liệu cũ vào Form
   useEffect(() => {
     const fetchCurrentProfile = async () => {
       const token = localStorage.getItem("access_token");
@@ -46,15 +58,23 @@ export default function ProfileEditPage() {
       }
 
       try {
-        // Gọi API bốc dữ liệu hiện tại từ Database
-        const response = await api.get("/users/profile/me");
-        const data = response.data;
+        const [typesResponse, profileResponse] = await Promise.all([
+          jobService.getDisabilityTypes(),
+          authService.getProfileMe(),
+        ]);
 
+        const typesData = Array.isArray(typesResponse)
+          ? typesResponse
+          : (typesResponse as any).data || [];
+        if (Array.isArray(typesData)) {
+          setDisabilityTypes(typesData);
+        }
+
+        const data = profileResponse?.data || profileResponse;
         if (data) {
           setFullName(data.fullName || "");
 
           if (userRole === "Candidate" && data.candidateProfile) {
-            // Định dạng lại chuỗi YYYY-MM-DD để input type="date" nhận diện chính xác
             const rawDate = data.candidateProfile.dob;
             const formattedDate = rawDate
               ? new Date(rawDate).toISOString().split("T")[0]
@@ -64,6 +84,10 @@ export default function ProfileEditPage() {
               dob: formattedDate,
               phone: data.candidateProfile.phone || "",
               address: data.candidateProfile.address || "",
+              disabilityTypeId: data.candidateProfile.disabilityTypeId
+                ? String(data.candidateProfile.disabilityTypeId)
+                : "",
+              customDisabilityName: "",
             });
           } else if (userRole === "Employer" && data.employerProfile) {
             setEmployerData({
@@ -77,7 +101,7 @@ export default function ProfileEditPage() {
           }
         }
       } catch (error) {
-        console.error("Lỗi nạp dữ liệu cũ:", error);
+        console.error("Lỗi nạp dữ liệu qua Service:", error);
         toast.error("Không thể tải thông tin hồ sơ hiện tại.");
       } finally {
         setFetching(false);
@@ -93,12 +117,27 @@ export default function ProfileEditPage() {
 
     const bodyData =
       role === "Candidate"
-        ? { fullName, ...candidateData }
+        ? {
+            fullName,
+            dob: candidateData.dob
+              ? new Date(candidateData.dob).toISOString()
+              : null,
+            phone: candidateData.phone,
+            address: candidateData.address,
+            disabilityTypeId:
+              candidateData.disabilityTypeId === "custom"
+                ? "custom"
+                : Number(candidateData.disabilityTypeId),
+            customDisabilityName:
+              candidateData.disabilityTypeId === "custom"
+                ? candidateData.customDisabilityName
+                : null,
+          }
         : { ...employerData };
 
     try {
-      const response = await api.patch("/users/profile/edit", bodyData);
-      if (response.status === 200 || response.status === 201) {
+      const response = await authService.updateProfile(bodyData);
+      if (response.status === 200 || response.status === 201 || response) {
         toast.success("Cập nhật hồ sơ thành công!");
         router.push("/profile");
         router.refresh();
@@ -121,7 +160,6 @@ export default function ProfileEditPage() {
   }
 
   return (
-    // Đồng bộ container bọc ngoài cách biên 2 bên chuẩn chỉ giống hệt Profile và Tuyển dụng
     <div className="min-h-screen bg-white dark:bg-secondary text-slate-900 dark:text-white py-16 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Top Actions Nav */}
@@ -148,7 +186,7 @@ export default function ProfileEditPage() {
               <span
                 className={`px-4 py-1.5 rounded-lg transition-colors ${role === "Candidate" ? "bg-primary text-white dark:text-secondary font-black" : "text-slate-400"}`}
               >
-                Ứng viên khuyết tật
+                Ứng viên
               </span>
               <span
                 className={`px-4 py-1.5 rounded-lg transition-colors ${role === "Employer" ? "bg-primary text-white dark:text-secondary font-black" : "text-slate-400"}`}
@@ -229,6 +267,52 @@ export default function ProfileEditPage() {
                   placeholder="Địa chỉ thường trú hoặc tạm trú"
                   className="w-full p-4 rounded-xl border border-slate-200 dark:border-border-subtle bg-white dark:bg-secondary outline-none text-sm font-bold focus:border-primary transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
                 />
+              </div>
+
+              <div className="p-6 rounded-2xl border border-slate-200 dark:border-border-subtle bg-white dark:bg-secondary space-y-4">
+                <h4 className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-2">
+                  <Accessibility size={16} className="text-primary" /> Cấu hình
+                  đặc thù trợ năng ứng viên
+                </h4>
+
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Loại hình khuyết tật phù hợp với bạn *
+                  </label>
+
+                  <div className="relative w-full">
+                    <select
+                      required
+                      value={candidateData.disabilityTypeId}
+                      onChange={(e) =>
+                        setCandidateData({
+                          ...candidateData,
+                          disabilityTypeId: e.target.value,
+                        })
+                      }
+                      className="w-full p-4 pr-10 rounded-xl border border-slate-200 dark:border-border-subtle bg-white dark:bg-secondary outline-none text-sm font-bold focus:border-primary transition-all text-slate-900 dark:text-white appearance-none cursor-pointer"
+                    >
+                      <option value="" className="text-slate-400">
+                        -- Click để chọn loại hình khuyết tật --
+                      </option>
+                      {disabilityTypes.map((type) => (
+                        <option key={type.id} value={type.id}>
+                          {type.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Icon mũi tên góc phải custom cho đồng bộ UI */}
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
+                      <ChevronDown size={18} />
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium italic mt-1">
+                    * Dữ liệu này được sử dụng trực tiếp để tối ưu hóa thuật
+                    toán gợi ý việc làm tự động AI Matchmaker.
+                  </p>
+                </div>
               </div>
             </div>
           ) : (

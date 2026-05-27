@@ -18,11 +18,19 @@ export const jobService = {
   },
 
   // 3. Đăng tuyển Job mới
-  createJob: (jobData: any): Promise<any> => {
-    return api.post("/jobs", jobData);
+  createJob: async (payload: any): Promise<any> => {
+    const response = await api.post("/jobs", payload);
+    return response.data?.data || response.data || response;
   },
 
+  // 4. Danh sách danh mục việc làm
   getCategories: async (): Promise<any[]> => {
     return api.get("/jobs/categories");
+  },
+
+  // 5. Danh sách loại khuyết tật
+  getDisabilityTypes: async (): Promise<any[]> => {
+    const response = await api.get("/jobs/disability-types");
+    return response.data?.data || response.data || response;
   },
 };

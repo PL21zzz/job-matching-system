@@ -1,6 +1,7 @@
 "use client";
 
-import api from "@/src/lib/axios"; // 🚨 Dùng instance 'api' có Interceptor
+import api from "@/src/lib/axios";
+import { authService } from "@/src/services/authService";
 import { useAuthStore } from "@/src/store/useAuthStore";
 import {
   ChevronDown,
@@ -25,14 +26,15 @@ export const Navbar = () => {
 
   const { user, isAuthenticated, setAuth, logout } = useAuthStore();
 
-  // 同 bộ thông tin User từ DB khi vào trang
   useEffect(() => {
     const syncAuth = async () => {
       const token = localStorage.getItem("access_token");
       if (token && !isAuthenticated) {
         try {
-          const response = await api.get("/users/profile/me");
-          setAuth(response.data);
+          const userData = await authService.getProfileMe();
+          if (userData) {
+            setAuth(userData);
+          }
         } catch (error: any) {
           logout();
         }
@@ -68,7 +70,7 @@ export const Navbar = () => {
     {
       name: "Bàn làm việc",
       href:
-        user?.role?.name === "EMPLOYER"
+        user?.role?.name === "EMPLOYER" || user?.role?.name === "Employer"
           ? "/employer/dashboard"
           : "/candidate/dashboard",
       icon: LayoutDashboard,
@@ -128,10 +130,14 @@ export const Navbar = () => {
                 </div>
                 <div className="text-left hidden lg:block">
                   <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">
-                    {user?.fullName || "Đang tải..."}
+                    {user?.fullName || "Đang tải dữ liệu..."}
                   </p>
-                  <p className="text-[10px] text-slate-500 dark:text-gray-500 font-medium mt-1 uppercase tracking-tighter">
-                    {user?.role?.name || "Thành viên"}
+                  <p className="text-[10px] text-slate-500 dark:text-gray-500 font-bold mt-1.5 uppercase tracking-wider">
+                    {user?.role?.name === "Candidate"
+                      ? "Ứng viên"
+                      : user?.role?.name === "Employer"
+                        ? "Nhà tuyển dụng"
+                        : user?.role?.name || "Thành viên"}
                   </p>
                 </div>
                 <ChevronDown

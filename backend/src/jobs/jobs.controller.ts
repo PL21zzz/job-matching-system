@@ -22,6 +22,11 @@ export class JobsController {
     return await this.jobsService.findAllCategories();
   }
 
+  @Get('disability-types')
+  async getDisabilityTypes() {
+    return await this.jobsService.findAllDisabilityTypes();
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post()
   async createJob(@Req() req: any, @Body() createJobDto: CreateJobDto) {

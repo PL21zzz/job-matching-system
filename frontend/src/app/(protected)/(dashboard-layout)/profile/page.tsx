@@ -28,7 +28,7 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        // Tận dụng lại hàm giải mã base64 có sẵn trong máy sếp (hoặc bốc từ Zustand nếu thích)
+        // Tận dụng lại hàm giải mã base64 có sẵn trong máy sếp
         const token = localStorage.getItem("access_token");
         let userRole = "";
 
@@ -83,7 +83,7 @@ export default function ProfilePage() {
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase animate-pulse">
-            Đang nạp cấu trúc Bento...
+            Đang nạp cấu trúc...
           </p>
         </div>
       </div>
@@ -91,7 +91,6 @@ export default function ProfilePage() {
 
   return (
     <div className="transition-colors duration-300 bg-white dark:bg-secondary min-h-screen py-16 px-4 sm:px-6 lg:px-8 selection:bg-primary/20">
-      {/* Container ép khung max-w-7xl chuẩn hàng lối với Navbar */}
       <div className="max-w-7xl mx-auto space-y-12">
         {/* ================= 1. BANNER CẢNH BÁO HOÀN THIỆN ================= */}
         {isProfileEmpty && (
@@ -172,8 +171,8 @@ export default function ProfilePage() {
                 viên
               </div>
 
-              {/* Grid 3 cột dãn cách cực rộng rãi đúng chuẩn Bento */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+              {/* Grid bento 4 thẻ cân đối cực kỳ đẹp mắt */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
                 <BentoCard
                   icon={Calendar}
                   label="Ngày sinh"
@@ -182,13 +181,24 @@ export default function ProfilePage() {
                       ? new Date(
                           profile.candidateProfile.dob,
                         ).toLocaleDateString("vi-VN")
-                      : "15/05/1995"
+                      : "Chưa cập nhật ngày sinh"
                   }
                 />
                 <BentoCard
                   icon={Phone}
                   label="Số điện thoại"
-                  value={profile?.candidateProfile?.phone || "+84 905 123 456"}
+                  value={
+                    profile?.candidateProfile?.phone || "Chưa cập nhật SĐT"
+                  }
+                />
+
+                <BentoCard
+                  icon={Accessibility}
+                  label="Loại trợ năng khuyết tật"
+                  value={
+                    profile?.candidateProfile?.disabilityType?.name ||
+                    "Chưa cấu hình loại trợ năng"
+                  }
                 />
 
                 <div className="p-6 rounded-2xl bg-slate-50 dark:bg-surface border border-slate-200 dark:border-border-subtle flex flex-col justify-between space-y-3 shadow-md min-h-27.5">
@@ -201,7 +211,7 @@ export default function ProfilePage() {
                   </p>
                 </div>
 
-                <div className="p-6 rounded-2xl bg-slate-50 dark:bg-surface border border-slate-200 dark:border-border-subtle flex flex-col justify-between space-y-3 shadow-md md:col-span-3 min-h-27.5">
+                <div className="p-6 rounded-2xl bg-slate-50 dark:bg-surface border border-slate-200 dark:border-border-subtle flex flex-col justify-between space-y-3 shadow-md md:col-span-2 lg:col-span-4 min-h-27.5">
                   <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
                     <MapPin size={14} className="text-primary" /> Địa chỉ cư trú
                   </div>

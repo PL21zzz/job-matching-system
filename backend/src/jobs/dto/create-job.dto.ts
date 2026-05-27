@@ -1,4 +1,10 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateJobDto {
   @IsNotEmpty({ message: 'Tiêu đề công việc không được để trống' })
@@ -40,4 +46,8 @@ export class CreateJobDto {
   @IsNotEmpty({ message: 'Ngành nghề không được để trống' })
   @IsInt({ message: 'Mã ngành nghề (categoryId) phải là số nguyên' })
   categoryId!: number;
+
+  @IsArray()
+  @IsOptional()
+  suitableDisabilityIds?: number[];
 }

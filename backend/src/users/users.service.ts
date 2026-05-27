@@ -13,8 +13,15 @@ export class UsersService {
         email: true,
         fullName: true,
         roleId: true,
-        // Đổ kèm bảng dữ liệu chi tiết tương ứng với Role
-        candidateProfile: userRole === 'Candidate' ? true : false,
+        role: true,
+        candidateProfile:
+          userRole === 'Candidate'
+            ? {
+                include: {
+                  disabilityType: true,
+                },
+              }
+            : false,
         employerProfile: userRole === 'Employer' ? true : false,
       },
     });
@@ -27,6 +34,7 @@ export class UsersService {
 
     return user;
   }
+
   async updateProfile(userId: string, userRole: string, dto: any) {
     const { fullName, ...profileData } = dto;
 
@@ -46,6 +54,9 @@ export class UsersService {
           dob: profileData.dob ? new Date(profileData.dob) : undefined,
           phone: profileData.phone,
           address: profileData.address,
+          disabilityTypeId: profileData.disabilityTypeId
+            ? Number(profileData.disabilityTypeId)
+            : undefined,
         },
       });
     }

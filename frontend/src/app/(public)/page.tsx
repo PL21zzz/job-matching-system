@@ -9,32 +9,10 @@ import Workflow from "../../components/sections/home/Workflow";
 import { SectionHeading } from "../../components/ui/SectionHeading";
 
 export default function HomePage() {
-  const partners = [
-    "Novaha Lab",
-    "FPT Software",
-    "VNG",
-    "Viettel",
-    "Equitas Tech",
-  ];
-
   return (
     <div className="transition-colors duration-300 bg-white dark:bg-secondary">
       {/* 1. Hero Section */}
       <Hero />
-
-      {/* 2. Partners Social Proof */}
-      <section className="py-8 bg-slate-50/50 dark:bg-surface border-y border-slate-100 dark:border-white/5">
-        <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-center gap-12 md:gap-20 opacity-60 dark:opacity-40">
-          {partners.map((p, i) => (
-            <span
-              key={i}
-              className="text-lg font-bold text-slate-600 dark:text-white"
-            >
-              {p}
-            </span>
-          ))}
-        </div>
-      </section>
 
       {/* 3. Key Statistics */}
       <section className="py-16 md:py-24 max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">

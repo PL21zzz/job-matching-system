@@ -86,6 +86,7 @@ model DisabilityType {
   name             String             @unique
   description      String?
   candidateProfiles CandidateProfile[]
+  jobs              Job[]
 
   @@map("disability_types")
 }
@@ -115,8 +116,6 @@ model Job {
   type          String   @default("FULL_TIME") // FULL_TIME, PART_TIME, REMOTE
   status        String   @default("OPEN")      // OPEN, CLOSED
 
-  // Tiện ích hỗ trợ người khuyết tật cho CÔNG VIỆC NÀY
-  // Ví dụ: "Xe lăn, Trình đọc màn hình, Ngôn ngữ ký hiệu"
   accessibilityFeatures String? @map("accessibility_features")
 
   createdAt     DateTime @default(now()) @map("created_at")
@@ -130,6 +129,7 @@ model Job {
   category      Category @relation(fields: [categoryId], references: [id])
 
   applications  Application[]
+  suitableDisabilities  DisabilityType[]
 
   @@map("jobs")
 }

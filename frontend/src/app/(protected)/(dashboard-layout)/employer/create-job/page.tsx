@@ -17,9 +17,13 @@ import { toast } from "react-hot-toast";
 export default function CreateJobPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [categoriesLoading, setCategoriesLoading] = useState(true); // Loading riêng cho ô ngành nghề
-  const [categories, setCategories] = useState<any[]>([]); // Lưu ngành nghề từ DB
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categories, setCategories] = useState<any[]>([]);
   const [errorMsg, setErrorMsg] = useState("");
+  const [disabilityTypes, setDisabilityTypes] = useState<any[]>([]);
+  const [suitableDisabilityIds, setSuitableDisabilityIds] = useState<number[]>(
+    [],
+  );
 
   const [formData, setFormData] = useState({
     title: "",
@@ -37,7 +41,6 @@ export default function CreateJobPage() {
     [],
   );
 
-  // 🔥 Khởi tạo: Gọi API bốc danh mục ngành nghề xịn từ Database
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -51,6 +54,21 @@ export default function CreateJobPage() {
       }
     };
     loadCategories();
+  }, []);
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        // Gọi service tập trung lấy danh mục khuyết tật
+        const types = await jobService.getDisabilityTypes();
+        if (Array.isArray(types)) {
+          setDisabilityTypes(types);
+        }
+      } catch (error) {
+        console.error("Không thể tải danh mục khuyết tật:", error);
+      }
+    };
+    loadInitialData();
   }, []);
 
   const handleInputChange = (
@@ -87,6 +105,7 @@ export default function CreateJobPage() {
         description: formData.description,
         requirements: formData.requirements,
         accessibilityFeatures: selectedAccessibility.join(", ") || null,
+        suitableDisabilityIds: suitableDisabilityIds,
       };
 
       await jobService.createJob(payload);
@@ -97,6 +116,12 @@ export default function CreateJobPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCheckboxDis = (id: number) => {
+    setSuitableDisabilityIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
   };
 
   return (
@@ -308,6 +333,42 @@ export default function CreateJobPage() {
               );
             })}
           </div>
+        </div>
+
+        {/* ================= KHỐI LỰA CHỌN NHÓM KHUYẾT TẬT PHÙ HỢP ================= */}
+        <div className="p-6 rounded-2xl border border-slate-200 dark:border-white/5 bg-white dark:bg-secondary space-y-4">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-primary">
+            Nhóm ứng viên khuyết tật phù hợp với vị trí này *
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            {disabilityTypes.map((type) => (
+              <label
+                key={type.id}
+                className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-surface cursor-pointer hover:border-primary/40 transition-all select-none"
+              >
+                <input
+                  type="checkbox"
+                  checked={suitableDisabilityIds.includes(type.id)}
+                  onChange={() => handleCheckboxDis(type.id)}
+                  className="w-4 h-4 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary accent-primary cursor-pointer"
+                />
+                <div className="text-left">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">
+                    {type.name}
+                  </p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-1 leading-normal">
+                    {type.description}
+                  </p>
+                </div>
+              </label>
+            ))}
+          </div>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium italic">
+            * Lưu ý: Việc lựa chọn chính xác nhóm khuyết tật giúp hệ thống AI
+            Matchmaker điều hướng tin tuyển dụng đến đúng phân vùng màn hình
+            hiển thị của ứng viên phù hợp.
+          </p>
         </div>
 
         {/* ACTIONS */}

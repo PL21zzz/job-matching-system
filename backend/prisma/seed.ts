@@ -1,12 +1,7 @@
 import { PrismaClient } from '@prisma/client';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
 
-dotenv.config({ path: path.join(__dirname, '../.env') });
-
-const prisma = new PrismaClient({
-  log: ['error'],
-});
+// Khởi tạo trực tiếp không truyền param lỗi engine
+const prisma = new PrismaClient();
 
 async function main() {
   console.log('🚀 Bắt đầu nạp Master Data...');
@@ -26,7 +21,7 @@ async function main() {
     });
   }
 
-  // --- Bảng DisabilityType (Có đầy đủ description) ---
+  // --- Bảng DisabilityType (8 danh mục phẳng, ngắn gọn, chuẩn gu sếp) ---
   const disabilityTypes = [
     {
       id: 1,
@@ -50,6 +45,29 @@ async function main() {
       description:
         'Gặp trở ngại trong phát âm hoặc sử dụng ngôn ngữ giao tiếp.',
     },
+    {
+      id: 5,
+      name: 'Khuyết tật trí tuệ',
+      description:
+        'Suy giảm khả năng nhận thức, học tập hoặc chậm phát triển trí tuệ.',
+    },
+    {
+      id: 6,
+      name: 'Khuyết tật thần kinh',
+      description:
+        'Gặp các hội chứng tự kỷ, rối loạn phổ tự kỷ hoặc tổn thương hệ thần kinh.',
+    },
+    {
+      id: 7,
+      name: 'Khuyết tật tinh thần',
+      description:
+        'Mắc các bệnh lý tâm thần phân liệt, trầm cảm nặng hoặc rối loạn tâm thần.',
+    },
+    {
+      id: 8,
+      name: 'Đa khuyết tật',
+      description: 'Người mắc đồng thời từ hai loại khuyết tật trở lên.',
+    },
   ];
 
   for (const type of disabilityTypes) {
@@ -63,12 +81,12 @@ async function main() {
     });
   }
 
-  console.log('✅ Đã nạp xong Roles và DisabilityTypes!');
+  console.log('✅ Đã nạp xong Roles và 8 DisabilityTypes sạch sẽ!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Lỗi:', e);
+    console.error('❌ Lỗi seed dữ liệu:', e);
     process.exit(1);
   })
   .finally(async () => {

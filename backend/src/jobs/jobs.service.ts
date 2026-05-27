@@ -26,7 +26,7 @@ export class JobsService {
 
     if (!employerProfile) {
       throw new BadRequestException(
-        'Tài khoản của sếp chưa hoàn thiện hồ sơ nhà tuyển dụng để có thể đăng tin.',
+        'Tài khoản của bạn chưa hoàn thiện hồ sơ nhà tuyển dụng để có thể đăng tin.',
       );
     }
 
@@ -41,21 +41,29 @@ export class JobsService {
       );
     }
 
-    // 3. Tiến hành tạo bài đăng Job mới kết nối chuẩn đét với schema sếp gửi
+    const { suitableDisabilityIds, ...jobData } = dto;
+
+    // 3. Tiến hành tạo bài đăng Job mới kết nối chuẩn với bảng liên kết Nhiều - Nhiều
     return await this.prisma.job.create({
       data: {
-        title: dto.title,
-        description: dto.description,
-        requirements: dto.requirements,
-        salaryMin: dto.salaryMin,
-        salaryMax: dto.salaryMax,
-        salaryText: dto.salaryText,
-        location: dto.location,
-        type: dto.type || 'FULL_TIME',
-        accessibilityFeatures: dto.accessibilityFeatures,
-        employerId: employerProfile.id, // Chuẩn trường khóa ngoại employer_id
-        categoryId: dto.categoryId, // Chuẩn trường khóa ngoại category_id
+        title: jobData.title,
+        description: jobData.description,
+        requirements: jobData.requirements,
+        salaryMin: jobData.salaryMin,
+        salaryMax: jobData.salaryMax,
+        salaryText: jobData.salaryText,
+        location: jobData.location,
+        type: jobData.type || 'FULL_TIME',
+        accessibilityFeatures: jobData.accessibilityFeatures,
+        employerId: employerProfile.id,
+        categoryId: jobData.categoryId,
         status: 'OPEN',
+
+        suitableDisabilities: {
+          connect: Array.isArray(suitableDisabilityIds)
+            ? suitableDisabilityIds.map((id: number) => ({ id: Number(id) }))
+            : [],
+        },
       },
       include: {
         employer: {
@@ -63,6 +71,7 @@ export class JobsService {
             companyName: true,
           },
         },
+        suitableDisabilities: true,
       },
     });
   }
@@ -101,6 +110,7 @@ export class JobsService {
             name: true,
           },
         },
+        suitableDisabilities: true,
       },
       orderBy: {
         createdAt: 'desc', // Tin mới đăng xếp lên đầu
@@ -126,6 +136,7 @@ export class JobsService {
             name: true,
           },
         },
+        suitableDisabilities: true,
       },
     });
 
@@ -136,5 +147,13 @@ export class JobsService {
     }
 
     return job;
+  }
+
+  async findAllDisabilityTypes() {
+    return await this.prisma.disabilityType.findMany({
+      orderBy: {
+        id: 'asc',
+      },
+    });
   }
 }
