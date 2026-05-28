@@ -56,8 +56,13 @@ describe('UsersService', () => {
           email: true,
           fullName: true,
           roleId: true,
-          candidateProfile: true,
+          candidateProfile: {
+            include: {
+              disabilityType: true,
+            },
+          },
           employerProfile: false,
+          role: true,
         },
       });
     });

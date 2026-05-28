@@ -14,6 +14,8 @@ const mockJob = {
   status: 'OPEN',
   employerId: 'employer-uuid-123',
   categoryId: 1,
+  // Bổ sung dữ liệu mảng quan hệ trả về từ DB
+  suitableDisabilities: [{ id: 1, name: 'Khuyết tật vận động' }],
 };
 
 const mockCategory = {
@@ -31,10 +33,12 @@ const mockPrismaService = {
   employerProfile: {
     findUnique: jest.fn(),
   },
+
   category: {
     findUnique: jest.fn(),
     findMany: jest.fn(),
   },
+
   job: {
     create: jest.fn(),
     findMany: jest.fn(),
@@ -74,6 +78,7 @@ describe('JobsService', () => {
       description: 'Phát triển giao diện web trợ năng',
       requirements: 'Thành thạo React, HTML/CSS',
       accessibilityFeatures: 'Lối đi xe lăn',
+      suitableDisabilityIds: [1], // Thêm mảng ID khuyết tật đầu vào theo đúng workflow
     };
 
     it('should successfully create a job when profile and category are valid', async () => {
@@ -97,7 +102,16 @@ describe('JobsService', () => {
       expect(prisma.category.findUnique).toHaveBeenCalledWith({
         where: { id: mockDto.categoryId },
       });
-      expect(prisma.job.create).toHaveBeenCalled();
+
+      // Kiểm tra xem cấu trúc lưu data có truyền connect mảng ID chính xác hay không
+      expect(prisma.job.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          suitableDisabilities: {
+            connect: [{ id: 1 }],
+          },
+        }),
+        include: expect.any(Object),
+      });
     });
 
     it('should throw BadRequestException if employer profile does not exist', async () => {
@@ -107,7 +121,7 @@ describe('JobsService', () => {
         service.createJob('user-uuid-999', mockDto as any),
       ).rejects.toThrow(
         new BadRequestException(
-          'Tài khoản của sếp chưa hoàn thiện hồ sơ nhà tuyển dụng để có thể đăng tin.',
+          'Tài khoản của bạn chưa hoàn thiện hồ sơ nhà tuyển dụng để có thể đăng tin.',
         ),
       );
 
@@ -159,6 +173,9 @@ describe('JobsService', () => {
             status: 'OPEN',
             categoryId: 1,
           }),
+          include: expect.objectContaining({
+            suitableDisabilities: true, // Kiểm tra bắt buộc bốc kèm tag ở danh sách
+          }),
         }),
       );
     });
@@ -170,6 +187,12 @@ describe('JobsService', () => {
 
       const result = await service.findJobById('job-uuid-111');
       expect(result).toEqual(mockJob);
+      expect(prisma.job.findUnique).toHaveBeenCalledWith({
+        where: { id: 'job-uuid-111' },
+        include: expect.objectContaining({
+          suitableDisabilities: true, // Kiểm tra bắt buộc bốc kèm tag ở chi tiết
+        }),
+      });
     });
 
     it('should throw NotFoundException if job does not exist', async () => {

@@ -8,6 +8,7 @@ const mockJob = {
   title: 'Lập trình viên ReactJS',
   employerId: 'employer-uuid-123',
   categoryId: 1,
+  suitableDisabilities: [{ id: 1, name: 'Khuyết tật vận động' }],
 };
 
 const mockCategory = {
@@ -61,6 +62,7 @@ describe('JobsController', () => {
       salaryMax: 25000000,
       description: 'Phát triển giao diện web trợ năng',
       requirements: 'Thành thạo React, HTML/CSS',
+      suitableDisabilityIds: [1], // Đồng bộ DTO chứa mảng lọc khuyết tật của Controller
     };
 
     it('should successfully create a job if role is Employer', async () => {
