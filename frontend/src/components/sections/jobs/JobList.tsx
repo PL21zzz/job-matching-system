@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, Loader2, MapPin, Sparkles, Users } from "lucide-react";
+import Link from "next/link";
 
 interface JobListProps {
   jobs: any[];
@@ -130,9 +131,12 @@ const JobList = ({ jobs, loading }: JobListProps) => {
                 <p className="text-2xl font-black text-primary italic">
                   {job.salaryText || "Thỏa thuận"}
                 </p>
-                <button className="px-8 py-3 rounded-xl bg-primary text-white font-extrabold text-sm hover:scale-105 transition-all shadow-lg shadow-primary/20 active:scale-95">
-                  Xem Chi Tiết
-                </button>
+
+                <Link href={`/jobs/${job.id}`}>
+                  <button className="px-8 py-3 rounded-xl bg-primary text-white font-extrabold text-sm hover:scale-105 transition-all shadow-lg shadow-primary/20 active:scale-95 cursor-pointer">
+                    Xem Chi Tiết
+                  </button>
+                </Link>
               </div>
             </div>
           </div>
