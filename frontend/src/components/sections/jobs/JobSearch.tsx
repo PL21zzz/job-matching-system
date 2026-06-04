@@ -7,10 +7,9 @@ interface JobSearchProps {
 
 const JobSearch = ({ filters, setFilters }: JobSearchProps) => {
   return (
-    <section className="py-12 bg-slate-50/50 dark:bg-surface border-b border-slate-100 dark:border-white/5">
+    <section className="py-12 bg-white dark:bg-surface border-b border-slate-100 dark:border-white/5">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex flex-col md:flex-row gap-4 p-2 bg-white dark:bg-secondary border border-slate-200 dark:border-white/10 rounded-4xl shadow-xl">
-          {/* Ô tìm kiếm từ khóa */}
+        <div className="flex flex-col md:flex-row gap-4 p-2 bg-surface dark:bg-secondary border border-slate-200 dark:border-white/10 rounded-4xl shadow-xl">
           <div className="flex-1 flex items-center gap-3 px-6 py-3">
             <Search className="text-primary" size={20} />
             <input

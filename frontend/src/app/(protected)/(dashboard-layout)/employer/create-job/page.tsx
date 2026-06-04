@@ -1,15 +1,11 @@
 "use client";
 
-import { ACCESSIBILITY_OPTIONS } from "@/src/constants/jobs";
+import AccessibilityOptionForm from "@/src/components/sections/jobs/createJob/AccessibilityOptionForm";
+import BaseJobForm from "@/src/components/sections/jobs/createJob/BaseJobForm";
+import SalaryDetailForm from "@/src/components/sections/jobs/createJob/SalaryDetailForm";
+import Button from "@/src/components/ui/Button";
 import { jobService } from "@/src/services/jobService";
-import {
-  Accessibility,
-  Briefcase,
-  DollarSign,
-  Loader2,
-  MapPin,
-  Sparkles,
-} from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -59,7 +55,6 @@ export default function CreateJobPage() {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // Gọi service tập trung lấy danh mục khuyết tật
         const types = await jobService.getDisabilityTypes();
         if (Array.isArray(types)) {
           setDisabilityTypes(types);
@@ -88,6 +83,12 @@ export default function CreateJobPage() {
     );
   };
 
+  const handleCheckboxDis = (id: number) => {
+    setSuitableDisabilityIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
@@ -96,7 +97,7 @@ export default function CreateJobPage() {
     try {
       const payload = {
         title: formData.title,
-        categoryId: Number(formData.categoryId), // Ép kiểu về số nguyên khớp DTO ở Backend
+        categoryId: Number(formData.categoryId),
         type: formData.type,
         location: formData.location,
         salaryMin: formData.salaryMin ? Number(formData.salaryMin) : null,
@@ -118,14 +119,8 @@ export default function CreateJobPage() {
     }
   };
 
-  const handleCheckboxDis = (id: number) => {
-    setSuitableDisabilityIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
-  };
-
   return (
-    <div className="max-w-4xl mx-auto py-6 text-slate-900 dark:text-white">
+    <div className="max-w-4xl mx-auto py-6 text-slate-900 dark:text-white transition-colors duration-300">
       <div className="mb-8">
         <p className="text-xs font-medium text-slate-400 dark:text-gray-500 mb-1">
           Nhà tuyển dụng / Đăng tin mới
@@ -146,244 +141,42 @@ export default function CreateJobPage() {
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* SECTION 1: CƠ BẢN */}
-        <div className="p-8 rounded-3xl bg-slate-50/50 dark:bg-surface border border-slate-100 dark:border-white/5 space-y-6">
-          <h3 className="font-extrabold text-lg flex items-center gap-2 text-[#25B5BA]">
-            <Briefcase size={18} /> Thông tin công việc cơ bản
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
-                Tiêu đề công việc *
-              </label>
-              <input
-                type="text"
-                name="title"
-                required
-                value={formData.title}
-                onChange={handleInputChange}
-                placeholder="Ví dụ: Lập trình viên ReactJS, Thiết kế đồ họa..."
-                className="w-full p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-secondary outline-none text-sm focus:border-[#25B5BA]"
-              />
-            </div>
-
-            {/* O SELECT ĐÃ ĐƯỢC CHUYỂN THÀNH DATA ĐỘNG KHỚP PRISMA SCHEMA */}
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
-                Ngành nghề tuyển dụng *
-              </label>
-              <select
-                name="categoryId"
-                required
-                value={formData.categoryId}
-                onChange={handleInputChange}
-                disabled={categoriesLoading}
-                className="w-full p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-secondary outline-none text-sm font-bold focus:border-[#25B5BA] disabled:opacity-50"
-              >
-                <option value="">
-                  {categoriesLoading
-                    ? " đang tải danh mục..."
-                    : "-- Chọn ngành nghề --"}
-                </option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
-                Hình thức làm việc
-              </label>
-              <select
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-                className="w-full p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-secondary outline-none text-sm font-bold focus:border-[#25B5BA]"
-              >
-                <option value="FULL_TIME">FULL_TIME</option>
-                <option value="PART_TIME">PART_TIME</option>
-                <option value="REMOTE">REMOTE</option>
-              </select>
-            </div>
-
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
-                Địa điểm làm việc *
-              </label>
-              <div className="relative">
-                <MapPin
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                  size={18}
-                />
-                <input
-                  type="text"
-                  name="location"
-                  required
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  placeholder="Ví dụ: Hải Châu, Đà Nẵng"
-                  className="w-full pl-12 pr-4 p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-secondary outline-none text-sm focus:border-[#25B5BA]"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        <BaseJobForm
+          formData={formData}
+          handleInputChange={handleInputChange}
+          categories={categories}
+          categoriesLoading={categoriesLoading}
+        />
 
         {/* SECTION 2: ĐÃI NGỘ & MÔ TẢ */}
-        <div className="p-8 rounded-3xl bg-slate-50/50 dark:bg-surface border border-slate-100 dark:border-white/5 space-y-6">
-          <h3 className="font-extrabold text-lg flex items-center gap-2 text-purple-500">
-            <DollarSign size={18} /> Đãi ngộ & Nội dung chi tiết
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
-                Lương tối thiểu (VND)
-              </label>
-              <input
-                type="number"
-                name="salaryMin"
-                value={formData.salaryMin}
-                onChange={handleInputChange}
-                className="w-full p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-secondary outline-none text-sm"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
-                Lương tối đa (VND)
-              </label>
-              <input
-                type="number"
-                name="salaryMax"
-                value={formData.salaryMax}
-                onChange={handleInputChange}
-                className="w-full p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-secondary outline-none text-sm"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
-                Chuỗi hiển thị nhanh
-              </label>
-              <input
-                type="text"
-                name="salaryText"
-                value={formData.salaryText}
-                onChange={handleInputChange}
-                placeholder="Thỏa thuận, 15-20tr..."
-                className="w-full p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-secondary outline-none text-sm"
-              />
-            </div>
-            <div className="space-y-2 md:col-span-3">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
-                Mô tả công việc *
-              </label>
-              <textarea
-                name="description"
-                required
-                rows={5}
-                value={formData.description}
-                onChange={handleInputChange}
-                className="w-full p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-secondary outline-none text-sm resize-none"
-              />
-            </div>
-            <div className="space-y-2 md:col-span-3">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
-                Yêu cầu ứng viên *
-              </label>
-              <textarea
-                name="requirements"
-                required
-                rows={5}
-                value={formData.requirements}
-                onChange={handleInputChange}
-                className="w-full p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-secondary outline-none text-sm resize-none"
-              />
-            </div>
-          </div>
-        </div>
+        <SalaryDetailForm
+          formData={formData}
+          handleInputChange={handleInputChange}
+        />
 
-        {/* SECTION 3: TRỢ NĂNG ĐẶC THÙ */}
-        <div className="p-8 rounded-3xl bg-slate-50/50 dark:bg-surface border-2 border-[#25B5BA]/30 shadow-xl space-y-6">
-          <h3 className="font-extrabold text-lg flex items-center gap-2 text-[#25B5BA]">
-            <Accessibility size={18} /> Hạ tầng trợ năng hỗ trợ người khuyết tật
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {ACCESSIBILITY_OPTIONS.map((option) => {
-              const isChecked = selectedAccessibility.includes(option);
-              return (
-                <div
-                  key={option}
-                  onClick={() => handleCheckboxChange(option)}
-                  className="flex items-center gap-3 p-4 rounded-xl border bg-white dark:bg-secondary cursor-pointer group transition-all select-none hover:border-[#25B5BA]"
-                >
-                  <div
-                    className={`w-5 h-5 border-2 rounded-md flex items-center justify-center ${isChecked ? "border-[#25B5BA] bg-[#25B5BA]/10" : "border-slate-200 dark:border-white/10"}`}
-                  >
-                    <div
-                      className={`w-2 h-2 bg-[#25B5BA] rounded-sm ${isChecked ? "opacity-100" : "opacity-0"}`}
-                    />
-                  </div>
-                  <span
-                    className={`text-sm font-bold ${isChecked ? "text-[#25B5BA]" : "text-slate-600 dark:text-gray-400"}`}
-                  >
-                    {option}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {/* SECTION 3: TRỢ NĂNG ĐẶC THÙ & PHÂN LOẠI ỨNG VIÊN */}
+        <AccessibilityOptionForm
+          selectedAccessibility={selectedAccessibility}
+          handleCheckboxChange={handleCheckboxChange}
+          disabilityTypes={disabilityTypes}
+          suitableDisabilityIds={suitableDisabilityIds}
+          handleCheckboxDis={handleCheckboxDis}
+        />
 
-        {/* ================= KHỐI LỰA CHỌN NHÓM KHUYẾT TẬT PHÙ HỢP ================= */}
-        <div className="p-6 rounded-2xl border border-slate-200 dark:border-white/5 bg-white dark:bg-secondary space-y-4">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-primary">
-            Nhóm ứng viên khuyết tật phù hợp với vị trí này *
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            {disabilityTypes.map((type) => (
-              <label
-                key={type.id}
-                className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-surface cursor-pointer hover:border-primary/40 transition-all select-none"
-              >
-                <input
-                  type="checkbox"
-                  checked={suitableDisabilityIds.includes(type.id)}
-                  onChange={() => handleCheckboxDis(type.id)}
-                  className="w-4 h-4 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary accent-primary cursor-pointer"
-                />
-                <div className="text-left">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">
-                    {type.name}
-                  </p>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-1 leading-normal">
-                    {type.description}
-                  </p>
-                </div>
-              </label>
-            ))}
-          </div>
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium italic">
-            * Lưu ý: Việc lựa chọn chính xác nhóm khuyết tật giúp hệ thống AI
-            Matchmaker điều hướng tin tuyển dụng đến đúng phân vùng màn hình
-            hiển thị của ứng viên phù hợp.
-          </p>
-        </div>
-
-        {/* ACTIONS */}
-        <div className="flex items-center justify-end gap-4">
-          <button
+        {/* ACTIONS BUTTONS */}
+        <div className="flex items-center justify-end gap-4 pt-2">
+          <Button
             type="button"
+            variant="secondary"
             onClick={() => router.back()}
-            className="px-6 py-3 font-bold text-slate-400 hover:text-white"
+            className="w-fit px-6 py-3 normal-case font-bold"
           >
             Hủy bỏ
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             disabled={loading || categoriesLoading}
-            className="px-8 py-4 rounded-2xl bg-[#25B5BA] hover:bg-[#1da0a5] text-white font-black text-sm transition-all shadow-lg flex items-center gap-2 disabled:opacity-50"
+            className="w-fit px-8 py-4 text-xs"
           >
             {loading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -392,7 +185,7 @@ export default function CreateJobPage() {
                 Đăng tin tuyển dụng <Sparkles size={16} />
               </>
             )}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

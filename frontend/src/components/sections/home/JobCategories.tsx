@@ -40,7 +40,7 @@ export default function JobCategories() {
         {categories.map((cat, i) => (
           <div
             key={i}
-            className="bg-white dark:bg-surface p-6 rounded-2xl border border-slate-100 dark:border-white/5 hover:border-primary transition-all group cursor-pointer"
+            className="bg-surface dark:bg-surface p-6 rounded-2xl border border-slate-100 dark:border-white/5 hover:border-primary transition-all group cursor-pointer"
           >
             <div
               className={`w-12 h-12 ${cat.color} rounded-2xl flex items-center justify-center mb-4 transition-colors`}

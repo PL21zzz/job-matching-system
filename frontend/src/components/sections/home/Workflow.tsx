@@ -37,7 +37,7 @@ export default function Workflow() {
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Cột Ứng viên */}
-        <div className="bg-white dark:bg-surface p-8 md:p-10 rounded-3xl border border-slate-100 dark:border-white/5 space-y-6">
+        <div className="bg-surface dark:bg-surface p-8 md:p-10 rounded-3xl border border-slate-100 dark:border-white/5 space-y-6">
           <h3 className="text-2xl font-extrabold text-slate-950 dark:text-white">
             Dành Cho Ứng Viên
           </h3>
@@ -66,7 +66,7 @@ export default function Workflow() {
           </Link>
         </div>
         {/* Cột Doanh nghiệp */}
-        <div className="bg-white dark:bg-surface p-8 md:p-10 rounded-3xl border border-slate-100 dark:border-white/5 space-y-6">
+        <div className="bg-surface dark:bg-surface p-8 md:p-10 rounded-3xl border border-slate-100 dark:border-white/5 space-y-6">
           <h3 className="text-2xl font-extrabold text-slate-950 dark:text-white">
             Dành Cho Doanh Nghiệp
           </h3>

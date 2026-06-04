@@ -1,32 +1,42 @@
 @import "tailwindcss";
 
-/* Định nghĩa biến CSS cho background/foreground */
+/* Định nghĩa biến CSS cốt lõi */
 :root {
+  /* Nền lớn giữ màu trắng tinh khôi tuyệt đối như bạn yêu cầu */
   --background: #ffffff;
   --foreground: #020617;
+
+  --color-primary: #25b5ba;
+  --color-primary-hover: #209da2;
+  --color-primary-foreground: #ffffff;
+
+  /* 🔥 ĐOẠN ĂN TIỀN: Định nghĩa màu đà/xám ấm cho khối hộp ở chế độ Sáng */
+  --color-secondary: #ffffff; /* Nền phụ vẫn là trắng */
+  --color-surface: #f4f5f7; /* Màu xám đà nhạt chuẩn giống khối Testimonials của bạn */
+  --color-border-subtle: #e2e8f0; /* Đường viền mảnh */
 }
 
-/* Biến màu cho chế độ tối (Sâu thẳm, chuẩn AI) */
+/* Chế độ tối giữ nguyên màu đen sâu thẳm sếp thích */
 .dark {
-  --background: #030712; /* Đây chính là màu đen đẹp sếp thích */
+  --background: #030712;
   --foreground: #f8fafc;
+
+  --color-secondary: #030712;
+  --color-surface: #090e1a;
+  --color-border-subtle: rgba(255, 255, 255, 0.06);
 }
 
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-primary: #25b5ba;
-  --color-primary-hover: #209da2;
-  --color-primary-foreground: #ffffff;
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-foreground: var(--color-primary-foreground);
 
-  /* Màu nền chính (Body) - Đen sâu thẳm */
-  --color-secondary: #030712;
-
-  /* Màu Surface (Navbar, Footer, Card) - Sáng hơn một chút để tạo khối */
-  --color-surface: #090e1a;
-
-  /* Viền trắng mờ để tách biệt rõ hơn trong Dark Mode */
-  --color-border-subtle: rgba(255, 255, 255, 0.06);
+  /* Định nghĩa các token màu đồng bộ toàn hệ thống */
+  --color-secondary: var(--color-secondary);
+  --color-surface: var(--color-surface);
+  --color-border-subtle: var(--color-border-subtle);
 }
 
 body {

@@ -23,7 +23,7 @@ export default function HomePage() {
         ].map((s, i) => (
           <div
             key={i}
-            className="bg-white dark:bg-surface p-8 rounded-3xl border border-slate-100 dark:border-white/5 text-center"
+            className="bg-surface dark:bg-surface p-8 rounded-3xl border border-slate-100 dark:border-white/5 text-center"
           >
             <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
               <s.icon size={24} />
