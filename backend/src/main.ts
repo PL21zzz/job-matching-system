@@ -7,9 +7,9 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
 
   app.enableCors({
-    origin: 'http://localhost:3001', // Cho phép duy nhất port của Frontend
+    origin: 'http://localhost:3001',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true, // Cho phép gửi kèm Cookie/Auth Header nếu cần
+    credentials: true,
   });
 
   await app.listen(process.env.PORT ?? 3000);

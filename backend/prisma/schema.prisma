@@ -17,24 +17,25 @@ model Role {
 
 // 2. Người dùng (Hỗ trợ cả Local và Google Login)
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  passwordHash  String?  @map("password_hash") // Nullable cho Google Login
+  id           String  @id @default(uuid())
+  email        String  @unique
+  passwordHash String? @map("password_hash") // Nullable cho Google Login
 
-  provider      String   @default("local")     // "local" hoặc "google"
-  providerId    String?  @map("provider_id")    // ID từ Google
+  provider   String  @default("local") // "local" hoặc "google"
+  providerId String? @map("provider_id") // ID từ Google
 
-  fullName      String   @map("full_name")
-  status        String   @default("PENDING")    // PENDING, ACTIVE, BANNED
-  createdAt     DateTime @default(now()) @map("created_at")
+  fullName  String   @map("full_name")
+  status    String   @default("PENDING") // PENDING, ACTIVE, BANNED
+  createdAt DateTime @default(now()) @map("created_at")
 
-  roleId        Int?     @map("role_id")
-  role          Role?    @relation(fields: [roleId], references: [id])
+  roleId           Int?    @map("role_id")
+  role             Role?   @relation(fields: [roleId], references: [id])
   refreshTokenHash String?
 
   // Quan hệ 1-1 với các loại Profile
   candidateProfile CandidateProfile?
   employerProfile  EmployerProfile?
+  cvProfiles       CvProfile[]
 
   @@map("users")
 }
@@ -52,15 +53,15 @@ model Otp {
 
 // 4. Hồ sơ Ứng viên
 model CandidateProfile {
-  id                String          @id @default(uuid())
-  userId            String          @unique @map("user_id")
-  user              User            @relation(fields: [userId], references: [id])
-  dob               DateTime?
-  phone             String?
-  address           String?
-  disabilityTypeId  Int?            @map("disability_type_id")
-  disabilityType    DisabilityType? @relation(fields: [disabilityTypeId], references: [id])
-  applications      Application[]
+  id               String          @id @default(uuid())
+  userId           String          @unique @map("user_id")
+  user             User            @relation(fields: [userId], references: [id])
+  dob              DateTime?
+  phone            String?
+  address          String?
+  disabilityTypeId Int?            @map("disability_type_id")
+  disabilityType   DisabilityType? @relation(fields: [disabilityTypeId], references: [id])
+  applications     Application[]
 
   @@map("candidate_profiles")
 }
@@ -82,9 +83,9 @@ model EmployerProfile {
 
 // 6. Danh mục loại khuyết tật
 model DisabilityType {
-  id               Int                @id @default(autoincrement())
-  name             String             @unique
-  description      String?
+  id                Int                @id @default(autoincrement())
+  name              String             @unique
+  description       String?
   candidateProfiles CandidateProfile[]
   jobs              Job[]
 
@@ -93,78 +94,114 @@ model DisabilityType {
 
 // 7. Ngành nghề (IT, Thiết kế, Marketing...)
 model Category {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
-  jobs  Job[]
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  jobs Job[]
 
   @@map("categories")
 }
 
 // 8. Tin tuyển dụng
 model Job {
-  id            String   @id @default(uuid())
-  title         String
-  description   String   @db.Text
-  requirements  String   @db.Text
+  id           String @id @default(uuid())
+  title        String
+  description  String @db.Text
+  requirements String @db.Text
 
   // Lương: Tách min/max để AI tính toán và người dùng lọc (Filter)
-  salaryMin     Int?     @map("salary_min")
-  salaryMax     Int?     @map("salary_max")
-  salaryText    String?  @map("salary_text") // "15 - 25 Triệu"
+  salaryMin  Int?    @map("salary_min")
+  salaryMax  Int?    @map("salary_max")
+  salaryText String? @map("salary_text") // "15 - 25 Triệu"
 
-  location      String
-  type          String   @default("FULL_TIME") // FULL_TIME, PART_TIME, REMOTE
-  status        String   @default("OPEN")      // OPEN, CLOSED
+  location String
+  type     String @default("FULL_TIME") // FULL_TIME, PART_TIME, REMOTE
+  status   String @default("OPEN") // OPEN, CLOSED
 
   accessibilityFeatures String? @map("accessibility_features")
 
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Quan hệ
-  employerId    String   @map("employer_id")
-  employer      EmployerProfile @relation(fields: [employerId], references: [id])
+  employerId String          @map("employer_id")
+  employer   EmployerProfile @relation(fields: [employerId], references: [id])
 
-  categoryId    Int      @map("category_id")
-  category      Category @relation(fields: [categoryId], references: [id])
+  categoryId Int      @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id])
 
-  applications  Application[]
-  suitableDisabilities  DisabilityType[]
+  applications         Application[]
+  suitableDisabilities DisabilityType[]
 
   @@map("jobs")
 }
 
 // 9. Đơn ứng tuyển
 model Application {
-  id          String   @id @default(uuid())
-  candidateId String   @map("candidate_id")
+  id          String           @id @default(uuid())
+  candidateId String           @map("candidate_id")
   candidate   CandidateProfile @relation(fields: [candidateId], references: [id])
 
-  jobId       String   @map("job_id")
-  job         Job      @relation(fields: [jobId], references: [id])
+  jobId String @map("job_id")
+  job   Job    @relation(fields: [jobId], references: [id])
 
-  status      String   @default("APPLIED") // APPLIED, REVIEWING, INTERVIEW, ACCEPTED, REJECTED
+  status String @default("APPLIED") // APPLIED, REVIEWING, INTERVIEW, ACCEPTED, REJECTED
 
   // Điểm số tương thích do AI chấm
-  matchScore  Float?   @map("match_score")
+  matchScore Float? @map("match_score")
 
-  appliedAt   DateTime @default(now()) @map("applied_at")
+  appliedAt DateTime @default(now()) @map("applied_at")
 
   @@map("applications")
 }
 
 // 10. Câu chuyện thành công (Testimonials)
 model Testimonial {
-  id          String   @id @default(uuid())
-  content     String   @db.Text
-  authorName  String   @map("author_name")
-  authorRole  String   @map("author_role") // Ví dụ: Software Engineer, HR Manager
-  avatarUrl   String?  @map("avatar_url")   // Link ảnh đại diện người chia sẻ
+  id         String  @id @default(uuid())
+  content    String  @db.Text
+  authorName String  @map("author_name")
+  authorRole String  @map("author_role") // Ví dụ: Software Engineer, HR Manager
+  avatarUrl  String? @map("avatar_url") // Link ảnh đại diện người chia sẻ
 
-  // Sếp thêm trường này để chọn lọc câu chuyện nào đẹp nhất hiện lên trang chủ
-  isFeatured  Boolean  @default(false) @map("is_featured")
+  isFeatured Boolean @default(false) @map("is_featured")
 
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@map("testimonials")
+}
+
+// 11. Quản lý các mẫu Template thiết kế (Canva Style) mà bạn dựng sẵn layout bằng CSS/Tailwind
+model CvTemplate {
+  id        String      @id @default(uuid())
+  name      String // Ví dụ: "Mẫu Tối Giản", "Mẫu Công Nghệ Thanh Lịch"
+  thumbnail String // Link ảnh xem trước (Ảnh chụp giao diện mẫu để hiện ở trang chọn)
+  isActive  Boolean     @default(true)
+  profiles  CvProfile[]
+
+  @@map("cv_templates")
+}
+
+// 12. Hồ sơ CV lưu dữ liệu thật user điền + map với Template đã chọn
+model CvProfile {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  templateId String     @map("template_id")
+  template   CvTemplate @relation(fields: [templateId], references: [id])
+
+  // Thông tin cứng (Tự động bốc từ bảng ProfileMe sang điền hộ, cho phép sửa đè)
+  fullName  String  @map("full_name")
+  email     String
+  phone     String
+  address   String?
+  education Json? // Định dạng mảng: [{ school: "", major: "", duration: "" }]
+
+  // Thông tin cốt lõi (User điền thô + có nút gọi AI gọt giũa hướng theo JD gốc)
+  skills     String[]
+  experience Json? // Định dạng mảng: [{ company: "", position: "", bullets: [] }]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("cv_profiles")
 }

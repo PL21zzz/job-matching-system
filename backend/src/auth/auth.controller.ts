@@ -69,15 +69,18 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuth(@Req() req) {}
 
-  // backend/src/auth/auth.controller.ts
-
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req, @Res() res) {
     const result = await this.authService.googleLogin(req.user);
 
-    const frontendUrl = `http://localhost:3001/auth-callback?token=${result.access_token}&isNewUser=${result.isNewUser}`;
-    return res.redirect(frontendUrl);
+    // 🚀 Đã sửa: Lấy linh hoạt domain Frontend từ môi trường, mặc định local là 3001
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+
+    // Ghép chuỗi bằng cú pháp Template Literal chuẩn chỉ
+    return res.redirect(
+      `${frontendUrl}/auth-callback?token=${result.access_token}&isNewUser=${result.isNewUser}`,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

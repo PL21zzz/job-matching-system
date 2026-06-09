@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
+  baseURL:
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://equitas-backend-y6km.onrender.com",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -52,7 +54,7 @@ api.interceptors.response.use(
 
         // Gọi instance axios gốc (không dùng api instance này để tránh lặp vô hạn)
         const res = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/auth/refresh`,
+          `${process.env.NEXT_PUBLIC_API_URL || "https://equitas-backend-y6km.onrender.com"}/auth/refresh`,
           {},
           { headers: { Authorization: `Bearer ${rt}` } },
         );

@@ -1,12 +1,23 @@
+"use client";
+
 import Button from "@/src/components/ui/Button";
 import Card from "@/src/components/ui/Card";
-import { ArrowRight, Building2, Calendar, MapPin } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  Calendar,
+  MapPin,
+  Sparkles,
+} from "lucide-react";
+import { useRouter } from "next/navigation"; // Import hook để chuyển trang
 
 interface JobSidebarActionsProps {
   job: any;
 }
 
 export default function JobSidebarActions({ job }: JobSidebarActionsProps) {
+  const router = useRouter(); // Khởi tạo router điều hướng
+
   return (
     <div className="space-y-6 lg:h-full shrink-0 select-none">
       {/* ACTION CARD */}
@@ -21,8 +32,18 @@ export default function JobSidebarActions({ job }: JobSidebarActionsProps) {
           </p>
         </div>
 
+        {/* Nút ứng tuyển gốc của sếp */}
         <Button>
           Ứng tuyển ngay <ArrowRight size={16} />
+        </Button>
+
+        <Button
+          variant="secondary"
+          className="border-dashed border-primary/40 text-primary hover:bg-primary/5! mt-2 normal-case text-xs font-bold"
+          onClick={() => router.push(`/resumes/templates?jobId=${job.id}`)}
+        >
+          <Sparkles size={14} className="text-primary animate-pulse" /> Tạo CV
+          khớp Job này bằng AI
         </Button>
 
         <div className="pt-2 border-t border-slate-200 dark:border-border-subtle flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
