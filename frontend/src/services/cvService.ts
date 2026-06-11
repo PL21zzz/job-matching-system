@@ -1,25 +1,36 @@
 import api from "@/src/lib/axios";
 
+export interface CvInitProfileResponse {
+  fullName: string;
+  email: string;
+  phone: string;
+  address: string;
+  disabilityType: string;
+}
+
+export interface CvAiGeneratedResponse {
+  jobTitle: string;
+  summary: string;
+  experienceBullets: string[];
+  projects: { name: string; tech: string; desc: string }[];
+  skills: { name: string; level: number }[];
+  certifications: string[];
+  awards: string[];
+}
+
 export const cvService = {
-  // 1. Lấy danh sách các mẫu template CV từ DB
-  getTemplates: async (): Promise<any> => {
-    const response = await api.get("/resumes/templates");
-    return response.data?.data || response.data || response;
+  getProfileForCvInit: async (): Promise<CvInitProfileResponse> => {
+    return api.get("/users/profile/cv-init");
   },
 
-  // 2. Gọi AI gọt giũa đoạn văn kinh nghiệm dựa theo JD công việc
-  optimizeWithAI: async (payload: {
-    rawText: string;
-    jobTitle: string;
-    requirements: string;
-  }): Promise<any> => {
-    const response = await api.post("/resumes/ai/optimize", payload);
-    return response.data?.data || response.data || response;
-  },
-
-  // 3. Lưu bản nháp CV xuống cơ sở dữ liệu
-  saveCv: async (payload: any): Promise<any> => {
-    const response = await api.post("/resumes/save", payload);
-    return response.data?.data || response.data || response;
+  generateCvWithAi: async (
+    jobId: string,
+    templateId: string,
+  ): Promise<CvAiGeneratedResponse> => {
+    return api.post(
+      "/resumes/generate-ai",
+      { jobId, templateId },
+      { timeout: 30000 },
+    );
   },
 };

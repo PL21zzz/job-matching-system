@@ -32,9 +32,12 @@ export const LoginForm = ({
       {/* NÚT GOOGLE */}
       <button
         type="button"
+        // onClick={() =>
+        //   (window.location.href =
+        //     "https://equitas-backend-y6km.onrender.com/auth/google")
+        // }
         onClick={() =>
-          (window.location.href =
-            "https://equitas-backend-y6km.onrender.com/auth/google")
+          (window.location.href = "http://localhost:3000/auth/google")
         }
         suppressHydrationWarning
         className="w-full flex items-center justify-center gap-3 p-3.5 border border-slate-200 dark:border-white/10 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-gray-200 transition-all mb-6 font-medium active:scale-[0.98]"

@@ -1,32 +1,34 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Giả định sếp có guard check token này
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GenerateCvAiDto } from './dto/generate-cv-ai.dto';
 import { ResumesService } from './resumes.service';
 
 @Controller('resumes')
 export class ResumesController {
   constructor(private readonly resumesService: ResumesService) {}
-
-  @Get('templates')
-  async getTemplates() {
-    return this.resumesService.getTemplates();
-  }
-
-  @Post('ai/optimize')
-  async optimizeWithAI(
-    @Body() body: { rawText: string; jobTitle: string; requirements: string },
-  ) {
-    const result = await this.resumesService.optimizeSectionWithAI(
-      body.rawText,
-      body.jobTitle,
-      body.requirements,
-    );
-    return { data: result };
-  }
-
   @UseGuards(JwtAuthGuard)
-  @Post('save')
-  async saveCv(@Req() req, @Body() dto: any) {
-    const result = await this.resumesService.saveCvDraft(req.user.id, dto);
-    return { data: result };
+  @Post('generate-ai')
+  async generateCvWithAi(
+    @Req() req: any,
+    @Body() generateCvAiDto: GenerateCvAiDto,
+  ) {
+    // 1. Bóc tách userId từ payload token đã được JwtStrategy giải mã gán vào request
+    const userId = req.user?.sub;
+
+    if (!userId) {
+      throw new BadRequestException(
+        'Token không hợp lệ hoặc phiên làm việc đã hết hạn.',
+      );
+    }
+
+    // 2. Chuyển tiếp tham số xuống tầng Service xử lý lõi với Gemini AI
+    return this.resumesService.generateCvWithAi(userId, generateCvAiDto);
   }
 }

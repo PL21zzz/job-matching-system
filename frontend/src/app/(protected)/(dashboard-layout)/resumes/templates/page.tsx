@@ -81,7 +81,6 @@ export default function SelectTemplatePage() {
               layoutClassName="p-4 space-y-4 group cursor-pointer border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-surface rounded-3xl transition-transform duration-300 hover:-translate-y-1 shadow-sm hover:shadow-md"
               onClick={() => handleSelectTemplate(tpl.id)}
             >
-              {/* Tỷ lệ vàng khung giấy A4 chuẩn (1:1.41) */}
               <div className="aspect-[1/1.41] w-full rounded-2xl overflow-hidden border border-slate-300 dark:border-white/10 relative shadow-md bg-white">
                 <div className="w-full h-full pointer-events-none select-none origin-top">
                   <TemplateComponent {...demoData} isDemo={true} />

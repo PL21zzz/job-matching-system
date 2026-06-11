@@ -35,6 +35,34 @@ export class UsersService {
     return user;
   }
 
+  async getProfileForCv(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        fullName: true,
+        email: true,
+        candidateProfile: {
+          include: {
+            disabilityType: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Không tìm thấy thông tin người dùng.');
+    }
+
+    // Phẳng hóa dữ liệu (Flatten) để Frontend chỉ việc đập thẳng vào State CV
+    return {
+      fullName: user.fullName || '',
+      email: user.email || '',
+      phone: user.candidateProfile?.phone || '',
+      address: user.candidateProfile?.address || '',
+      disabilityType: user.candidateProfile?.disabilityType?.name || '',
+    };
+  }
+
   async updateProfile(userId: string, userRole: string, dto: any) {
     const { fullName, ...profileData } = dto;
 

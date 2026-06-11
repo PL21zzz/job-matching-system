@@ -34,6 +34,16 @@ export class UsersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('profile/cv-init')
+  async getProfileForCv(@Req() req: any) {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new BadRequestException('Token không hợp lệ.');
+    }
+    return this.usersService.getProfileForCv(userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch('profile/edit')
   async editProfile(@Req() req: any, @Body() body: any) {
     const userId = req.user?.sub;
