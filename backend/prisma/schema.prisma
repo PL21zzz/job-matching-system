@@ -146,7 +146,8 @@ model Application {
 
   status String @default("APPLIED") // APPLIED, REVIEWING, INTERVIEW, ACCEPTED, REJECTED
 
-  // Điểm số tương thích do AI chấm
+  coverLetter String? @db.Text @map("cover_letter")
+
   matchScore Float? @map("match_score")
 
   appliedAt DateTime @default(now()) @map("applied_at")

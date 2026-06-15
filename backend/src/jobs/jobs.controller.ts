@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApplyJobDto } from './dto/apply-job.dto';
 import { CreateJobDto } from './dto/create-job.dto';
 import { JobsService } from './jobs.service';
 
@@ -54,5 +55,23 @@ export class JobsController {
   @Get(':id')
   async findJobById(@Param('id') id: string) {
     return this.jobsService.findJobById(id);
+  }
+
+  @Get('generate-cover/:jobId')
+  @UseGuards(JwtAuthGuard)
+  async generateCover(@Req() req: any, @Param('jobId') jobId: string) {
+    // Giải mã JWT token lấy đi UserId (req.user.sub hoặc id tùy thuộc vào cách cấu hình chiến lược Passport của sếp)
+    const userId = req.user.id || req.user.sub;
+    return this.jobsService.generateCoverLetterAi(userId, jobId);
+  }
+
+  /**
+   * 🚀 CỔNG 2: Bấm nút chính thức nộp đơn ứng tuyển xuống Docker Postgres (Phương thức POST)
+   */
+  @Post('apply')
+  @UseGuards(JwtAuthGuard)
+  async applyJob(@Req() req: any, @Body() dto: ApplyJobDto) {
+    const userId = req.user.id || req.user.sub;
+    return this.jobsService.applyJob(userId, dto);
   }
 }

@@ -9,6 +9,10 @@ const EmployerHero = () => {
     router.push("/employer/create-job");
   };
 
+  const handleManageJobs = () => {
+    router.push("/employer/manage-jobs");
+  };
+
   return (
     <section className="relative py-24 md:py-32 overflow-hidden border-b border-border-subtle">
       <div className="absolute top-0 right-0 w-150 h-150 bg-primary/10 rounded-full blur-[150px] -z-10" />
@@ -35,13 +39,12 @@ const EmployerHero = () => {
             >
               Bắt đầu ngay
             </button>
+
             <button
-              onClick={() =>
-                window.open("https://zalo.me/your-number", "_blank")
-              }
-              className="px-8 py-4 rounded-2xl border-2 border-primary text-primary font-black hover:bg-primary/5 transition-all active:scale-95"
+              onClick={handleManageJobs}
+              className="px-8 py-4 rounded-2xl border-2 border-primary text-primary font-black hover:bg-primary/5 transition-all active:scale-95 hover:scale-105"
             >
-              Tư vấn giải pháp
+              Quản lý tuyển dụng
             </button>
           </div>
         </div>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { use, useEffect, useState } from "react";
 
 // Import các section mộc vừa tách
+import ApplyJobModal from "@/src/components/sections/jobs/detailJob/ApplyJobModal";
 import JobAccessibility from "@/src/components/sections/jobs/detailJob/JobAccessibility";
 import JobContent from "@/src/components/sections/jobs/detailJob/JobContent";
 import JobHero from "@/src/components/sections/jobs/detailJob/JobHero";
@@ -25,6 +26,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [aiMatchScore, setAiMatchScore] = useState<number>(95);
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     async function fetchJobDetail() {
@@ -110,10 +112,19 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
 
           {/* CỘT PHẢI (CỐ ĐỊNH) */}
           <div className="space-y-6 lg:sticky lg:top-0 lg:h-fit self-start">
-            <JobSidebarActions job={job} />
+            <JobSidebarActions
+              job={job}
+              onApplyClick={() => setIsApplyModalOpen(true)}
+            />
           </div>
         </div>
       </div>
+
+      <ApplyJobModal
+        isOpen={isApplyModalOpen}
+        onClose={() => setIsApplyModalOpen(false)}
+        job={job}
+      />
     </div>
   );
 }

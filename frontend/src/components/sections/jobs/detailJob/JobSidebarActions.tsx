@@ -13,9 +13,13 @@ import { useRouter } from "next/navigation"; // Import hook để chuyển trang
 
 interface JobSidebarActionsProps {
   job: any;
+  onApplyClick: () => void;
 }
 
-export default function JobSidebarActions({ job }: JobSidebarActionsProps) {
+export default function JobSidebarActions({
+  job,
+  onApplyClick,
+}: JobSidebarActionsProps) {
   const router = useRouter(); // Khởi tạo router điều hướng
 
   return (
@@ -32,8 +36,7 @@ export default function JobSidebarActions({ job }: JobSidebarActionsProps) {
           </p>
         </div>
 
-        {/* Nút ứng tuyển gốc của sếp */}
-        <Button>
+        <Button onClick={onApplyClick}>
           Ứng tuyển ngay <ArrowRight size={16} />
         </Button>
 
