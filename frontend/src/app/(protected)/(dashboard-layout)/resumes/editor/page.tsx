@@ -2,8 +2,6 @@
 "use client";
 
 import { cvService } from "@/src/services/cvService";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 import { ArrowLeft, Download, Loader2, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -105,43 +103,13 @@ export default function CVEditorPage() {
     initCVData();
   }, [jobId, templateId]);
 
-  const handleExportPDF = async () => {
-    if (!cvRef.current) {
-      alert("Hệ thống chưa sẵn sàng hiển thị bản xem trước CV!");
-      return;
-    }
-
+  const handleExportPDF = () => {
     setIsExporting(true);
     try {
-      // 🚀 CẤU HÌNH CÔ LẬP PHÂN VÙNG CHỤP - BỎ QUA THEME NGOẠI LAI
-      const canvas = await html2canvas(cvRef.current, {
-        scale: 2, // Đảm bảo chất lượng in ấn sắc nét, không vỡ chữ
-        useCORS: true, // Hỗ trợ bốc ảnh từ CDN nếu có
-        logging: false, // Tắt bớt log thừa của thư viện
-        backgroundColor: "#ffffff", // Ép nền trắng tinh khôi cho tờ CV A4 công chứng
-
-        // 🔥 CHÌA KHÓA CHÍ MẠNG GIẢI QUYẾT LỖI "LAB" COLOR:
-        // Không cho phép html2canvas sử dụng foreignObject rendering của trình duyệt
-        // (luồng rendering này thường quét toàn bộ document style gây crash do dính màu lab của theme)
-        foreignObjectRendering: false,
-      });
-
-      const imgData = canvas.toDataURL("image/jpeg", 1.0);
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "px",
-        format: [794, 1123], // Khớp khít khìn khịt với kích thước div con bên dưới
-      });
-
-      pdf.addImage(imgData, "JPEG", 0, 0, 794, 1123);
-      pdf.save(
-        `CV_${cvData.fullName ? cvData.fullName.replace(/\s+/g, "_") : "Ho_So"}.pdf`,
-      );
+      window.print();
     } catch (error) {
-      console.error("Lỗi xuất file PDF:", error);
-      alert(
-        "Đã xảy ra lỗi kết xuất, nhưng anh em mình đã cô lập được vùng. Thử lại phát sếp!",
-      );
+      console.error("Lỗi kích hoạt luồng in:", error);
+      alert("Không thể mở trình xuất PDF của hệ thống.");
     } finally {
       setIsExporting(false);
     }
@@ -216,8 +184,7 @@ export default function CVEditorPage() {
 
   return (
     <div className="h-screen bg-slate-900 flex flex-col text-slate-100 overflow-hidden">
-      {/* HEADER BAR - TÍNH NĂNG TẢI PDF SỬA LẠI ĐẸP MẮT */}
-      <header className="bg-slate-800/90 backdrop-blur-md border-b border-slate-700/60 px-6 py-3 flex justify-between items-center z-50 shrink-0 shadow-lg">
+      <header className="bg-slate-800/90 backdrop-blur-md border-b border-slate-700/60 px-6 py-3 flex justify-between items-center z-50 shrink-0 shadow-lg print:hidden">
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push(`/resumes/templates?jobId=${jobId}`)}
@@ -237,7 +204,6 @@ export default function CVEditorPage() {
           </div>
         </div>
 
-        {/* 🚀 NÚT TẢI XUỐNG ĐÃ ĐƯỢC THIẾT KẾ LẠI HỢP MẮT VÀ THÊM LOADING ANIMATION */}
         <button
           onClick={handleExportPDF}
           disabled={isExporting}
@@ -259,18 +225,19 @@ export default function CVEditorPage() {
 
       {/* WORKSPACE REGION */}
       <div className="flex-1 flex overflow-hidden">
-        <CVFormSidebar
-          cvData={cvData}
-          onChange={handleInputChange}
-          onBulletChange={handleBulletChange}
-          onProjectChange={handleProjectChange}
-          onEduChange={handleEduChange}
-          onSkillChange={handleSkillChange}
-          onCertChange={handleCertChange}
-          onAwardChange={handleAwardChange}
-        />
+        <div className="print:hidden h-full flex shrink-0">
+          <CVFormSidebar
+            cvData={cvData}
+            onChange={handleInputChange}
+            onBulletChange={handleBulletChange}
+            onProjectChange={handleProjectChange}
+            onEduChange={handleEduChange}
+            onSkillChange={handleSkillChange}
+            onCertChange={handleCertChange}
+            onAwardChange={handleAwardChange}
+          />
+        </div>
 
-        {/* TRUYỀN LẠI CVREF XUỐNG ĐÚNG CHUẨN QUY TRÌNH BAN ĐẦU CỦA ÔNG */}
         <CVPreviewArea
           cvRef={cvRef}
           SelectedTemplateComponent={SelectedTemplateComponent}
