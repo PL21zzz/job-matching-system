@@ -226,9 +226,6 @@ export class JobsService {
     }
   }
 
-  /**
-   * 💾 LUỒNG NỘP ĐƠN: Lưu chính thức bản ghi vào Docker Postgres
-   */
   async applyJob(userId: string, dto: ApplyJobDto) {
     // Tìm mã ứng viên CandidateProfile dựa trên User ID đăng nhập
     const candidateProfile = await this.prisma.candidateProfile.findUnique({
@@ -263,6 +260,83 @@ export class JobsService {
         coverLetter: dto.coverLetter,
         status: 'APPLIED', // Gắn cờ trạng thái nộp đơn mặc định từ Schema
       },
+    });
+  }
+
+  async findEmployerApplications(userId: string) {
+    // 1. Tìm profile nhà tuyển dụng dựa trên User ID đang đăng nhập
+    const employerProfile = await this.prisma.employerProfile.findUnique({
+      where: { userId: userId },
+    });
+
+    if (!employerProfile) {
+      throw new BadRequestException(
+        'Tài khoản của bạn không có quyền truy cập dữ liệu nhà tuyển dụng.',
+      );
+    }
+
+    // 2. Bốc toàn bộ các đơn ứng tuyển thuộc về những Job do nhà tuyển dụng này đăng
+    return await this.prisma.application.findMany({
+      where: {
+        job: {
+          employerId: employerProfile.id, // Lọc theo đúng ID của công ty này
+        },
+      },
+      include: {
+        // Kéo theo thông tin bài đăng Job
+        job: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+          },
+        },
+        // Kéo theo thông tin Hồ sơ & Tên tuổi, Loại khuyết tật của Ứng viên nộp đơn
+        candidate: {
+          include: {
+            user: {
+              select: {
+                fullName: true,
+                email: true,
+              },
+            },
+            disabilityType: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        appliedAt: 'desc', // Đơn ứng tuyển mới nhất xếp lên đầu
+      },
+    });
+  }
+
+  async updateApplicationStatus(applicationId: string, status: string) {
+    const validStatuses = [
+      'APPLIED',
+      'REVIEWING',
+      'INTERVIEW',
+      'ACCEPTED',
+      'REJECTED',
+    ];
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException('Trạng thái cập nhật không hợp lệ.');
+    }
+
+    const application = await this.prisma.application.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Không tìm thấy đơn ứng tuyển yêu cầu.');
+    }
+
+    return await this.prisma.application.update({
+      where: { id: applicationId },
+      data: { status },
     });
   }
 }

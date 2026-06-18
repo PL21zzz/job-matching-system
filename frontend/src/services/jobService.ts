@@ -49,4 +49,9 @@ export const jobService = {
     const response = await api.post("/jobs/apply", payload);
     return response.data?.data || response.data || response;
   },
+
+  getEmployerApplications: async (): Promise<any[]> => {
+    const response = await api.get("/jobs/employer/applications");
+    return response.data?.data || response.data || response;
+  },
 };

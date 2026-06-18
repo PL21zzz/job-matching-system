@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { JobsModule } from './jobs/jobs.module';
 import { ResumesModule } from './resumes/resumes.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ResumesModule } from './resumes/resumes.module';
     AuthModule,
     JobsModule,
     ResumesModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

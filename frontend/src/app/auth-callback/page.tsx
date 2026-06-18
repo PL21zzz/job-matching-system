@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuthStore } from "@/src/store/useAuthStore";
+import { jwtDecode } from "jwt-decode"; // 🚀 BỔ SUNG THẰNG NÀY ĐỂ GIẢI MÃ TOKEN GOOGLE
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import { toast } from "react-hot-toast";
@@ -7,31 +9,41 @@ import { toast } from "react-hot-toast";
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   useEffect(() => {
-    // 1. Nhặt token và cờ check user mới từ URL
     const token = searchParams.get("token");
     const isNewUser = searchParams.get("isNewUser") === "true";
 
     if (token) {
-      // 2. Lưu token vào localStorage để các request sau dùng
+      // 1. Lưu token vào máy
       localStorage.setItem("access_token", token);
 
-      // 3. Điều hướng thông minh
+      // 2. GIẢI MÃ TOKEN GOOGLE ĐỂ ĐỌC ROLE THẬT XUỐNG STORE
+      const decodedUser: any = jwtDecode(token);
+      setAuth(decodedUser);
+
+      // 3. ĐIỀU HƯỚNG THÔNG MINH KỂ CẢ ACC GOOGLE CÓ QUYỀN ADMIN
       if (isNewUser) {
-        toast.success("Đăng nhập thành công! Hãy hoàn tất hồ sơ nhé.");
-        // Nếu là user mới, đẩy sang trang Onboarding để chọn Role & cập nhật tên
+        toast.success("Đăng nhập Google thành công! Hãy hoàn tất hồ sơ nhé.");
         router.push("/onboarding");
       } else {
         toast.success("Chào mừng bạn trở lại!");
-        // Nếu user cũ, đẩy về trang chủ hoặc Dashboard
-        router.push("/");
+
+        // 🚀 RẼ NHÁNH SANG ADMIN DASHBOARD NẾU ACC GOOGLE NÀY LÀ ADMIN
+        if (decodedUser.role === "Admin") {
+          router.push("/admin/dashboard");
+        } else if (decodedUser.role === "Employer") {
+          router.push("/employer");
+        } else {
+          router.push("/");
+        }
       }
     } else {
       toast.error("Đăng nhập thất bại, vui lòng thử lại.");
       router.push("/login");
     }
-  }, [router, searchParams]);
+  }, [router, searchParams, setAuth]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white">

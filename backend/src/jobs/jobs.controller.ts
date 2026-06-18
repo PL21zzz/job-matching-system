@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -65,13 +66,23 @@ export class JobsController {
     return this.jobsService.generateCoverLetterAi(userId, jobId);
   }
 
-  /**
-   * 🚀 CỔNG 2: Bấm nút chính thức nộp đơn ứng tuyển xuống Docker Postgres (Phương thức POST)
-   */
   @Post('apply')
   @UseGuards(JwtAuthGuard)
   async applyJob(@Req() req: any, @Body() dto: ApplyJobDto) {
     const userId = req.user.id || req.user.sub;
     return this.jobsService.applyJob(userId, dto);
+  }
+
+  @Get('employer/applications')
+  @UseGuards(JwtAuthGuard)
+  async getEmployerApplications(@Req() req: any) {
+    const userId = req.user.id || req.user.sub;
+    return this.jobsService.findEmployerApplications(userId);
+  }
+
+  @Patch('applications/:id/status')
+  @UseGuards(JwtAuthGuard)
+  async updateStatus(@Param('id') id: string, @Body('status') status: string) {
+    return this.jobsService.updateApplicationStatus(id, status);
   }
 }

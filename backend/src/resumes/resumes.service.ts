@@ -1,4 +1,3 @@
-// src/resumes/resumes.service.ts
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   BadRequestException,
