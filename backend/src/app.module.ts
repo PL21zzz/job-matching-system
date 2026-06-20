@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { JobsModule } from './jobs/jobs.module';
 import { ResumesModule } from './resumes/resumes.module';
 import { AdminModule } from './admin/admin.module';
+import { VoiceModule } from './voice/voice.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AdminModule } from './admin/admin.module';
     JobsModule,
     ResumesModule,
     AdminModule,
+    VoiceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

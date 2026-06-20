@@ -1,5 +1,7 @@
-// Xóa toàn bộ cái đống experimental: { allowedDevOrigins: ... }
-const nextConfig = {
-  /* Để trống hoặc các config khác, xóa cái experimental đi */
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  reactStrictMode: true,
 };
+
 export default nextConfig;
