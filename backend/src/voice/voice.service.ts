@@ -94,21 +94,18 @@ export class VoiceService {
     const urlTextToSpeech = 'https://api.fpt.ai/hmi/tts/v5';
 
     try {
-      const response = await axios.post(
-        urlTextToSpeech,
-        {
-          text: text,
-          voice: 'banmai',
-          speed: 1,
+      const params = new URLSearchParams();
+      params.append('text', text);
+      params.append('voice', 'banmai');
+      params.append('speed', '1');
+
+      const response = await axios.post(urlTextToSpeech, params.toString(), {
+        headers: {
+          'api-key':
+            process.env.FPT_API_KEY || 'SxZZubyShSxkCMwsDD5YuynxsIbxAqwF',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        {
-          headers: {
-            api_key:
-              process.env.FPT_API_KEY || 'SxZZubyShSxkCMwsDD5YuynxsIbxAqwF',
-            'Content-Type': 'application/json',
-          },
-        },
-      );
+      });
 
       return response.data.async;
     } catch (err: any) {
