@@ -7,20 +7,15 @@ export const adminService = {
     return response.data?.data || response.data || response;
   },
 
-  // 2. Lấy danh sách doanh nghiệp đang chờ duyệt (PENDING)
-  getPendingEmployers: async (): Promise<any[]> => {
-    const response = await api.get("/admin/employers/pending");
-    return response.data?.data || response.data || response;
+  // 🚀 Hàm lấy danh sách tất cả ứng viên
+  getAllCandidates: async () => {
+    const response = await api.get("/admin/candidates");
+    return response; // 🌟 TRẢ VỀ THẲNG BIẾN 'response' (Nó chính là mảng thô, bỏ chữ .data đi sếp)
   },
 
-  // 3. Phê duyệt (ACTIVE) hoặc Khóa (BANNED) tài khoản doanh nghiệp
-  updateUserStatus: async (
-    userId: string,
-    status: "ACTIVE" | "BANNED" | "PENDING",
-  ): Promise<any> => {
-    const response = await api.patch(`/admin/users/${userId}/status`, {
-      status,
-    });
-    return response.data?.data || response.data || response;
+  // 🚀 Lấy danh sách tất cả nhà tuyển dụng
+  getAllEmployers: async () => {
+    const response = await api.get("/admin/employers");
+    return response; // 🌟 TRẢ VỀ THẲNG BIẾN 'response' (Bỏ chữ .data đi sếp)
   },
 };

@@ -186,55 +186,6 @@ export const Navbar = () => {
           {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
-
-      {/* MOBILE MENU */}
-      <div
-        className={`fixed inset-0 bg-white dark:bg-secondary z-40 transition-transform duration-300 ease-in-out md:hidden ${isMenuOpen ? "translate-x-0" : "translate-x-full"}`}
-      >
-        <div className="flex flex-col items-center justify-center h-full gap-8 px-6">
-          <nav className="flex flex-col items-center gap-6 text-xl font-bold">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setIsMenuOpen(false)}
-                className={
-                  pathname === link.href
-                    ? "text-primary"
-                    : "text-slate-900 dark:text-white"
-                }
-              >
-                {link.name}
-              </Link>
-            ))}
-          </nav>
-          <div className="flex flex-col w-full gap-4 pt-8 border-t border-slate-100 dark:border-white/5">
-            {!isAuthenticated ? (
-              <Link
-                href="/login"
-                onClick={() => setIsMenuOpen(false)}
-                className="w-full py-4 text-center font-bold text-slate-700 dark:text-slate-200"
-              >
-                Đăng Nhập
-              </Link>
-            ) : (
-              <button
-                onClick={handleLogout}
-                className="w-full py-4 text-center font-bold text-red-500"
-              >
-                Đăng xuất
-              </button>
-            )}
-            <Link
-              href="/register"
-              onClick={() => setIsMenuOpen(false)}
-              className="w-full py-4 text-center font-bold bg-primary text-white rounded-2xl"
-            >
-              Đăng Ký
-            </Link>
-          </div>
-        </div>
-      </div>
     </header>
   );
 };

@@ -146,6 +146,12 @@ export class AuthService {
       throw new UnauthorizedException('Tài khoản chưa được kích hoạt!');
     }
 
+    if (user.status === 'BANNED') {
+      throw new ForbiddenException(
+        'Tài khoản của bạn đã bị khóa do vi phạm chính sách hệ thống!',
+      );
+    }
+
     // 3. Check mật khẩu
     const isMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!isMatch)

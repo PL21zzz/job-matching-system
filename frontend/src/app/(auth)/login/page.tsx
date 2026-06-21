@@ -34,30 +34,13 @@ export default function LoginPage() {
         localStorage.setItem("refresh_token", refresh_token);
 
         // 2. GIẢI MÃ TOKEN ĐỂ LẤY DATA THẬT (id, email, role...)
-        const decodedUser: any = jwtDecode(access_token);
+        const decodedUser = jwtDecode(access_token);
 
         // 3. CẬP NHẬT STORE NGAY LẬP TỨC
         setAuth(decodedUser);
 
         toast.success("Đăng nhập thành công!");
-
-        // 🚀 4. RẼ NHÁNH ĐIỀU HƯỚNG DỰA VÀO QUYỀN (ROLE) THỜI GIAN THỰC
-        // Sếp lưu ý check lại xem trường role trong token của sếp viết hoa hay viết thường (ví dụ: "Admin", "Employer") nhé!
-        if (decodedUser.role === "Admin") {
-          router.push("/admin/dashboard");
-        } else if (decodedUser.role === "Employer") {
-          // Tiện tay xử lý nếu tài khoản nhà tuyển dụng chưa được Admin duyệt (ACTIVE)
-          if (decodedUser.status === "PENDING") {
-            toast.loading(
-              "Tài khoản của bạn đang trong trạng thái chờ Admin phê duyệt.",
-            );
-            router.push("/employer"); // Vẫn cho vào trang employer giới thiệu chung hoặc trang thông báo
-          } else {
-            router.push("/employer");
-          }
-        } else {
-          router.push("/"); // Ứng viên (Candidate) hoặc mặc định thì đá về trang chủ tìm việc
-        }
+        router.push("/");
       }
     } catch (error: any) {
       const msg =

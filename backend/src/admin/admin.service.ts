@@ -6,17 +6,11 @@ import { PrismaService } from '../prisma/prisma.service';
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * 📊 1. BỐC SỐ LIỆU THỐNG KÊ TỔNG QUAN (Đổ vào 4 ô màu Dashboard)
-   */
   async getDashboardStats() {
-    // Chạy song song tất cả các lệnh đếm để tối ưu hiệu năng Database
     const [totalCandidates, pendingEmployers, openJobs, rejectedApplications] =
       await Promise.all([
-        // Thẻ 1: Tổng số Ứng viên
         this.prisma.candidateProfile.count(),
 
-        // Thẻ 2: Nhà tuyển dụng đang chờ duyệt tài khoản (PENDING)
         this.prisma.user.count({
           where: {
             role: { name: 'Employer' },
@@ -57,6 +51,51 @@ export class AdminService {
       },
       orderBy: {
         createdAt: 'desc',
+      },
+    });
+  }
+
+  async getAllEmployers() {
+    return this.prisma.user.findMany({
+      where: {
+        role: {
+          name: 'Employer',
+        },
+      },
+      include: {
+        employerProfile: true, // Bốc kèm theo profile công ty để lấy tên, địa chỉ
+      },
+      orderBy: {
+        createdAt: 'desc', // Doanh nghiệp mới đăng ký xếp lên đầu
+      },
+    });
+  }
+
+  async getAllCandidates() {
+    return this.prisma.user.findMany({
+      where: {
+        role: {
+          name: 'Candidate', // Chỉ lấy những người có quyền là Ứng viên
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        status: true,
+        createdAt: true,
+        candidateProfile: {
+          select: {
+            disabilityType: {
+              select: {
+                name: true, // Lấy tên loại khuyết tật hiển thị lên bảng
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc', // Người mới đăng ký xếp lên đầu
       },
     });
   }
