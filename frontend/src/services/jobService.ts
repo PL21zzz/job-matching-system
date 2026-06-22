@@ -37,17 +37,20 @@ export const jobService = {
   generateCoverLetterAi: async (
     jobId: string,
   ): Promise<{ coverLetter: string }> => {
-    const response = await api.get(`/jobs/generate-cover/${jobId}`);
+    const response = await api.get(`/jobs/generate-cover/${jobId}`, {
+      timeout: 30000,
+    });
     return response.data?.data || response.data || response;
   },
 
   // 7. Bắn payload lưu đơn ứng tuyển chính thức vào Docker Postgres
-  applyJob: async (payload: {
-    jobId: string;
-    coverLetter: string;
-  }): Promise<any> => {
-    const response = await api.post("/jobs/apply", payload);
-    return response.data?.data || response.data || response;
+  applyJob: async (formData: FormData): Promise<any> => {
+    const response = await api.post("/jobs/apply", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data", // Ép trình duyệt mở cổng stream file vật lý
+      },
+    });
+    return response;
   },
 
   getEmployerApplications: async (): Promise<any[]> => {

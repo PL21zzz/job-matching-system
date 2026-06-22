@@ -47,7 +47,6 @@ export default function ApplyJobModal({
     }
   };
 
-  // 🚀 Bấm nút nộp đơn ứng tuyển chính thức xuống Docker Postgres
   const handleSubmitApplication = async () => {
     if (!selectedFile) {
       alert("Vui lòng chọn hoặc tải tệp tin CV (.pdf, .docx) của bạn lên!");
@@ -61,12 +60,14 @@ export default function ApplyJobModal({
     try {
       setIsSubmitting(true);
 
-      // Ghi chú cho sếp: Nếu sau này backend bắt upload file thật qua Multer, sếp sẽ dùng FormData.
-      // Hiện tại luồng logic text anh em mình bắn JSON lên lưu cột coverLetter trước:
-      await jobService.applyJob({
-        jobId: job.id,
-        coverLetter: coverLetter,
-      });
+      // 🌟 KHỞI TẠO FORMDATA ĐỂ ĐÓNG GÓI FILE VẬT LÝ BIẾN THÀNH STREAM BITS
+      const formData = new FormData();
+      formData.append("file", selectedFile); // Khớp với cái tên '@UploadedFile('file')' tí nữa viết bên Backend
+      formData.append("jobId", job.id);
+      formData.append("coverLetter", coverLetter);
+
+      // Bắn thẳng gói dữ liệu hỗn hợp sang NestJS
+      await jobService.applyJob(formData);
 
       setSubmitSuccess(true);
     } catch (error: any) {
@@ -186,7 +187,7 @@ export default function ApplyJobModal({
               <div className="space-y-2">
                 <div className="flex items-center justify-between select-none">
                   <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
-                    Thư ứng tuyển (Cover Letter)
+                    Thư ứng tuyển
                   </label>
 
                   <button
@@ -198,12 +199,12 @@ export default function ApplyJobModal({
                     {isAiGenerating ? (
                       <>
                         <Loader2 size={12} className="animate-spin" />
-                        <span>Đang nhào nặn thư...</span>
+                        <span>Đang viết thư...</span>
                       </>
                     ) : (
                       <>
                         <Sparkles size={12} className="animate-pulse" />
-                        <span>🪄 AI Viết hộ thư xin việc</span>
+                        <span>AI Viết hộ thư xin việc</span>
                       </>
                     )}
                   </button>

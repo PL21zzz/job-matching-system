@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   ForbiddenException,
@@ -8,8 +9,11 @@ import {
   Post,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApplyJobDto } from './dto/apply-job.dto';
 import { CreateJobDto } from './dto/create-job.dto';
@@ -68,9 +72,22 @@ export class JobsController {
 
   @Post('apply')
   @UseGuards(JwtAuthGuard)
-  async applyJob(@Req() req: any, @Body() dto: ApplyJobDto) {
-    const userId = req.user.id || req.user.sub;
-    return this.jobsService.applyJob(userId, dto);
+  @UseInterceptors(FileInterceptor('file')) // 🌟 BẮT BUỘC: Mở cổng Multer interceptor bắt biến 'file' từ FE gửi lên
+  async applyJob(
+    @Req() req: any,
+    @Body() dto: ApplyJobDto,
+    @UploadedFile() file: Express.Multer.File, // 🌟 BẮT BUỘC: Khai báo để nhận file vật lý thô từ bộ nhớ đệm
+  ) {
+    const userId = req.user.id || req.user.sub; //
+
+    if (!file) {
+      throw new BadRequestException(
+        'Hệ thống không tìm thấy file CV đính kèm của bạn.',
+      );
+    }
+
+    // Ném cả userId, dữ liệu chữ (dto), và file vật lý xuống cho tầng Service xử lý
+    return this.jobsService.applyJob(userId, dto, file);
   }
 
   @Get('employer/applications')

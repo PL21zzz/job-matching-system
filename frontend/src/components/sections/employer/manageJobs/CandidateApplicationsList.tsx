@@ -27,7 +27,7 @@ export default function CandidateApplicationsList({
   // 🚀 ĐỤC CỔNG GỌI API THỜI GIAN THỰC ĐỂ DUYỆT / TỪ CHỐI
   const handleUpdateStatus = async (
     applicationId: string,
-    nextStatus: "REVIEWING" | "REJECTED",
+    nextStatus: "REVIEWING" | "INTERVIEW" | "ACCEPTED" | "REJECTED",
   ) => {
     try {
       setActionLoadingId(applicationId);
@@ -98,7 +98,7 @@ export default function CandidateApplicationsList({
               <div className="border border-white/5 bg-slate-950/40 px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
                 <Sparkles size={11} className="text-tertiary animate-pulse" />
                 <span className="text-[10px] font-black text-tertiary">
-                  MATCH {app.matchScore || 90}%
+                  MATCH {app.matchScore}%
                 </span>
               </div>
             </div>
@@ -131,39 +131,95 @@ export default function CandidateApplicationsList({
             </div>
             <button
               type="button"
-              onClick={() => window.open("/mock-cv-path.pdf", "_blank")}
+              onClick={() => {
+                if (app?.cvUrl) {
+                  window.open(app.cvUrl, "_blank");
+                } else {
+                  alert("Không tìm thấy file CV của ứng viên này!");
+                }
+              }}
               className="py-1.5 px-3.5 border border-dashed border-white/10 hover:border-primary text-slate-300 hover:text-primary rounded-xl text-[10px] font-black uppercase tracking-wider transition duration-200 shrink-0"
             >
               Xem bản cứng
             </button>
           </div>
 
-          {/* DÒNG 4: HÀNH ĐỘNG DUYỆT ĐƠN (ĐƯA VỀ THÀNH GÓC PHẢI NHỎ GỌN, CHUYÊN NGHIỆP) */}
-          {app.status === "APPLIED" && (
-            <div className="pt-2 flex justify-end gap-3">
+          {/* DÒNG 4: HÀNH ĐỘNG DUYỆT ĐƠN (XỬ LÝ STEPPER ĐỘNG CHUẨN NGHIỆP VỤ) */}
+          {app.status !== "ACCEPTED" && app.status !== "REJECTED" && (
+            <div className="pt-2 flex justify-end gap-3 select-none">
+              {/* NÚT TỪ CHỐI: Luôn xuất hiện ở mọi bước nếu chưa kết thúc quy trình */}
               <button
                 type="button"
                 disabled={actionLoadingId !== null}
                 onClick={() => handleUpdateStatus(app.id, "REJECTED")}
-                className="inline-flex items-center gap-1 py-2 px-4 text-[10px] font-black uppercase text-rose-400 border border-rose-500/20 hover:bg-rose-500/5 transition rounded-xl"
+                className="inline-flex items-center gap-1 py-2 px-4 text-[10px] font-black uppercase text-rose-400 border border-rose-500/20 hover:bg-rose-500/10 transition rounded-xl cursor-pointer"
               >
-                <Ban size={12} /> Từ chối
+                <Ban size={12} /> Từ chối hồ sơ
               </button>
 
-              <button
-                type="button"
-                disabled={actionLoadingId !== null}
-                onClick={() => handleUpdateStatus(app.id, "REVIEWING")}
-                className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white py-2 px-5 text-[10px] font-black uppercase tracking-wider rounded-xl transition shadow-md active:scale-95 disabled:opacity-50"
-              >
-                {actionLoadingId === app.id ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <>
-                    <UserCheck size={12} /> Tiếp nhận hồ sơ
-                  </>
-                )}
-              </button>
+              {/* NÚT TIẾN ĐỘ ĐỘNG THEO TRẠNG THÁI HIỆN TẠI */}
+              {app.status === "APPLIED" && (
+                <button
+                  type="button"
+                  disabled={actionLoadingId !== null}
+                  onClick={() => handleUpdateStatus(app.id, "REVIEWING")}
+                  className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white py-2 px-5 text-[10px] font-black uppercase tracking-wider rounded-xl transition shadow-md active:scale-95 cursor-pointer"
+                >
+                  {actionLoadingId === app.id ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <>
+                      <UserCheck size={12} /> Tiếp nhận hồ sơ
+                    </>
+                  )}
+                </button>
+              )}
+
+              {app.status === "REVIEWING" && (
+                <button
+                  type="button"
+                  disabled={actionLoadingId !== null}
+                  onClick={() => handleUpdateStatus(app.id, "INTERVIEW")}
+                  className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white py-2 px-5 text-[10px] font-black uppercase tracking-wider rounded-xl transition shadow-md active:scale-95 cursor-pointer"
+                >
+                  {actionLoadingId === app.id ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <>
+                      <Sparkles size={12} /> Mời phỏng vấn ➔
+                    </>
+                  )}
+                </button>
+              )}
+
+              {app.status === "INTERVIEW" && (
+                <button
+                  type="button"
+                  disabled={actionLoadingId !== null}
+                  onClick={() => handleUpdateStatus(app.id, "ACCEPTED")}
+                  className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-5 text-[10px] font-black uppercase tracking-wider rounded-xl transition shadow-md active:scale-95 cursor-pointer"
+                >
+                  {actionLoadingId === app.id ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <>
+                      <UserCheck size={12} /> Chấp nhận tuyển dụng 🎉
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* HIỂN THỊ TRẠNG THÁI KẾT THÚC (NẾU ĐÃ CHỐT ĐƠN) */}
+          {app.status === "ACCEPTED" && (
+            <div className="text-right text-xs font-black text-emerald-400 uppercase tracking-wider select-none">
+              ✓ Quy trình hoàn tất: Đã tiếp nhận vào công ty
+            </div>
+          )}
+          {app.status === "REJECTED" && (
+            <div className="text-right text-xs font-black text-rose-500 uppercase tracking-wider select-none">
+              ✕ Hồ sơ không phù hợp với tiêu chí tuyển dụng
             </div>
           )}
         </div>

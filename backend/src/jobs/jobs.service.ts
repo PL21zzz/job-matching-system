@@ -5,6 +5,8 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { v2 as cloudinary } from 'cloudinary';
+import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApplyJobDto } from './dto/apply-job.dto';
 import { CreateJobDto } from './dto/create-job.dto';
@@ -12,7 +14,14 @@ import { CreateJobDto } from './dto/create-job.dto';
 @Injectable()
 export class JobsService {
   private ai: GoogleGenerativeAI;
+  private openai: OpenAI;
   constructor(private readonly prisma: PrismaService) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error(
@@ -20,6 +29,9 @@ export class JobsService {
       );
     }
     this.ai = new GoogleGenerativeAI(apiKey);
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
   }
 
   async findAllCategories() {
@@ -31,7 +43,6 @@ export class JobsService {
   }
 
   async createJob(userId: string, dto: CreateJobDto) {
-    // 1. Kiểm tra xem tài khoản này đã cấu hình Hồ sơ doanh nghiệp chưa
     const employerProfile = await this.prisma.employerProfile.findUnique({
       where: { userId: userId },
     });
@@ -42,7 +53,6 @@ export class JobsService {
       );
     }
 
-    // 2. Kiểm tra xem ngành nghề (categoryId) có tồn tại không
     const categoryExists = await this.prisma.category.findUnique({
       where: { id: dto.categoryId },
     });
@@ -55,7 +65,6 @@ export class JobsService {
 
     const { suitableDisabilityIds, ...jobData } = dto;
 
-    // 3. Tiến hành tạo bài đăng Job mới kết nối chuẩn với bảng liên kết Nhiều - Nhiều
     return await this.prisma.job.create({
       data: {
         title: jobData.title,
@@ -88,7 +97,6 @@ export class JobsService {
     });
   }
 
-  // Lấy danh sách Job có bộ lọc động
   async findAllJobs(filters: {
     search?: string;
     location?: string;
@@ -98,17 +106,17 @@ export class JobsService {
 
     return await this.prisma.job.findMany({
       where: {
-        status: 'OPEN', // Chỉ lấy những Job đang mở tuyển dụng
-        ...(categoryId && { categoryId: Number(categoryId) }), // Nếu có chọn ngành nghề thì lọc theo ngành nghề
+        status: 'OPEN',
+        ...(categoryId && { categoryId: Number(categoryId) }),
         ...(location && {
           location: { contains: location, mode: 'insensitive' },
-        }), // Lọc theo địa điểm
+        }),
         ...(search && {
           OR: [
             { title: { contains: search, mode: 'insensitive' } },
             { description: { contains: search, mode: 'insensitive' } },
           ],
-        }), // Lọc theo từ khóa tìm kiếm (tiêu đề hoặc mô tả)
+        }),
       },
       include: {
         employer: {
@@ -125,12 +133,11 @@ export class JobsService {
         suitableDisabilities: true,
       },
       orderBy: {
-        createdAt: 'desc', // Tin mới đăng xếp lên đầu
+        createdAt: 'desc',
       },
     });
   }
 
-  // Xem chi tiết một bài tuyển dụng cụ thể
   async findJobById(id: string) {
     const job = await this.prisma.job.findUnique({
       where: { id },
@@ -140,7 +147,7 @@ export class JobsService {
             companyName: true,
             description: true,
             address: true,
-            accessibilityFeatures: true, // Tiện ích trợ năng gốc của văn phòng doanh nghiệp
+            accessibilityFeatures: true,
           },
         },
         category: {
@@ -170,12 +177,10 @@ export class JobsService {
   }
 
   async generateCoverLetterAi(userId: string, jobId: string) {
-    // Kiếm tin tuyển dụng trong Docker Postgres
     const job = await this.prisma.job.findUnique({ where: { id: jobId } });
     if (!job)
       throw new NotFoundException('Công việc này không tồn tại trên hệ thống.');
 
-    // Kiếm profile ứng viên và kéo theo dải danh mục loại khuyết tật trợ năng
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -195,7 +200,6 @@ export class JobsService {
       user.candidateProfile.disabilityType?.name ||
       'Cần hỗ trợ trợ năng tổng quát';
 
-    // Thiết kế Prompt bẻ lái kịch bản tinh tế, tôn vinh năng lực ứng viên
     const prompt = `
       Bạn là một chuyên gia cố vấn hướng nghiệp và viết thư ứng tuyển (Cover Letter) xuất sắc.
       Hãy soạn thảo một bức thư xin việc ngắn gọn, trang trọng và mang tính thuyết phục cao (khoảng 200-250 từ) bằng TIẾNG VIỆT để gửi đến bộ phận nhân sự cho vị trí: ${job.title}.
@@ -226,10 +230,11 @@ export class JobsService {
     }
   }
 
-  async applyJob(userId: string, dto: ApplyJobDto) {
-    // Tìm mã ứng viên CandidateProfile dựa trên User ID đăng nhập
+  async applyJob(userId: string, dto: ApplyJobDto, file: Express.Multer.File) {
+    // 1. KIỂM TRA THÔNG TIN HỒ SƠ ỨNG VIÊN
     const candidateProfile = await this.prisma.candidateProfile.findUnique({
       where: { userId },
+      include: { disabilityType: true },
     });
 
     if (!candidateProfile) {
@@ -238,7 +243,7 @@ export class JobsService {
       );
     }
 
-    // Chặn trùng lặp: Nếu ứng viên đã nộp đơn vào job này rồi thì không cho nộp nữa
+    // 2. KIỂM TRA ĐƠN ỨNG TUYỂN TRÙNG LẶP
     const existingApplication = await this.prisma.application.findFirst({
       where: {
         candidateId: candidateProfile.id,
@@ -252,19 +257,108 @@ export class JobsService {
       );
     }
 
-    // Tạo bản ghi lưu trữ thư ứng tuyển mới tinh vào cột coverLetter vừa bổ sung ở Prisma
+    // 3. KIỂM TRA TIN TUYỂN DỤNG
+    const job = await this.prisma.job.findUnique({ where: { id: dto.jobId } });
+    if (!job) throw new NotFoundException('Tin tuyển dụng này không tồn tại.');
+
+    // 4. TIẾN TRÌNH UPLOAD FILE LÊN CLOUDINARY LẤY URL THẬT
+    let secureCvUrl = '';
+    try {
+      const uploadResult = await new Promise<any>((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(
+            {
+              resource_type: 'raw', // Lưu trữ tệp tin dạng văn bản/PDF
+              folder: 'candidate_cvs',
+              public_id: `${Date.now()}-${file.originalname.replace(/\.[^/.]+$/, '')}`,
+            },
+            (error, result) => {
+              if (error) return reject(error);
+              resolve(result);
+            },
+          )
+          .end(file.buffer);
+      });
+      secureCvUrl = uploadResult.secure_url;
+      console.log('=== UPLOAD CV LÊN CLOUDINARY THÀNH CÔNG ===', secureCvUrl);
+    } catch (uploadError) {
+      console.error('Lỗi upload Cloudinary:', uploadError);
+      throw new BadRequestException(
+        'Hệ thống không thể lưu trữ tệp tin CV. Vui lòng thử lại.',
+      );
+    }
+
+    // Trích xuất chữ thô ban đầu từ buffer file (Loại bỏ các ký tự nhị phân lỗi)
+    const extractedCvText = file.buffer
+      .toString('utf8')
+      .replace(/[^\x20-\x7E\x0A\x0D]/g, ' ');
+
+    // 5. LUỒNG CHẤM ĐIỂM THÔNG MINH BẰNG OPENAI GPT-4O-MINI
+    let computedScore = 70; // Điểm mặc định phòng hờ lỗi mạng
+
+    try {
+      console.log('=== ĐANG GỬI DỮ LIỆU SANG OPENAI GPT CHẤM ĐIỂM... ===');
+
+      const matchPrompt = `
+        Bạn là một chuyên gia Tuyển dụng nhân sự cao cấp (ATS System).
+        Hãy phân tích nội dung chữ trích xuất từ CV của Ứng viên và so sánh với Yêu cầu công việc (JD) sau để chấm điểm độ tương thích.
+
+        [YÊU CẦU CÔNG VIỆC (JD)]:
+        - Tiêu đề: ${job.title}
+        - Mô tả: ${job.description}
+        - Yêu cầu: ${job.requirements}
+
+        [THƯ GIỚI THIỆU (COVER LETTER)]:
+        ${dto.coverLetter || 'Không có thư giới thiệu.'}
+
+        [DỮ LIỆU VĂN BẢN TRÍCH XUẤT TỪ CV]:
+        ${extractedCvText.substring(0, 5000)}
+
+        Nhiệm vụ của bạn: Đánh giá mức độ tương thích (Match Score) giữa CV và JD từ 0 đến 100.
+        BẮT BUỘC TRẢ VỀ ĐỊNH DẠNG JSON NGUYÊN BẢN, KHÔNG CHỨA BLOCK MARKDOWN (\`\`\`json):
+        {
+          "matchScore": số_nguyên_từ_0_đến_100
+        }
+      `;
+
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: matchPrompt }],
+        temperature: 0.2,
+        response_format: { type: 'json_object' }, // Ép OpenAI trả về cấu trúc JSON sạch
+      });
+
+      const rawJson = completion.choices[0].message.content?.trim();
+      if (rawJson) {
+        const parsedData = JSON.parse(rawJson);
+        if (parsedData && typeof parsedData.matchScore === 'number') {
+          computedScore = parsedData.matchScore;
+        }
+      }
+      console.log(
+        '=== OPENAI SMARTMATCH XỬ LÝ THÀNH CÔNG === Điểm số thật:',
+        computedScore,
+      );
+    } catch (aiError) {
+      console.error('Lỗi tiến trình OpenAI chấm điểm:', aiError);
+      // Fallback giữ nguyên 70 điểm để luồng ứng tuyển không bị gián đoạn
+    }
+
+    // 6. GHI NHẬN ĐƠN ỨNG TUYỂN CHÍNH THỨC VÀO CƠ SỞ DỮ LIỆU
     return this.prisma.application.create({
       data: {
         candidateId: candidateProfile.id,
         jobId: dto.jobId,
         coverLetter: dto.coverLetter,
-        status: 'APPLIED', // Gắn cờ trạng thái nộp đơn mặc định từ Schema
+        cvUrl: secureCvUrl,
+        cvTextRaw: extractedCvText.substring(0, 3000), // Lưu trữ text sạch phục vụ tìm kiếm từ khóa sau này
+        status: 'APPLIED',
+        matchScore: computedScore,
       },
     });
   }
 
   async findEmployerApplications(userId: string) {
-    // 1. Tìm profile nhà tuyển dụng dựa trên User ID đang đăng nhập
     const employerProfile = await this.prisma.employerProfile.findUnique({
       where: { userId: userId },
     });
@@ -275,15 +369,13 @@ export class JobsService {
       );
     }
 
-    // 2. Bốc toàn bộ các đơn ứng tuyển thuộc về những Job do nhà tuyển dụng này đăng
     return await this.prisma.application.findMany({
       where: {
         job: {
-          employerId: employerProfile.id, // Lọc theo đúng ID của công ty này
+          employerId: employerProfile.id,
         },
       },
       include: {
-        // Kéo theo thông tin bài đăng Job
         job: {
           select: {
             id: true,
@@ -291,7 +383,6 @@ export class JobsService {
             status: true,
           },
         },
-        // Kéo theo thông tin Hồ sơ & Tên tuổi, Loại khuyết tật của Ứng viên nộp đơn
         candidate: {
           include: {
             user: {
@@ -309,7 +400,7 @@ export class JobsService {
         },
       },
       orderBy: {
-        appliedAt: 'desc', // Đơn ứng tuyển mới nhất xếp lên đầu
+        appliedAt: 'desc',
       },
     });
   }

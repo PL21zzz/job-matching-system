@@ -61,7 +61,7 @@ export default function AdminDashboardPage() {
         toast.error(
           "Quyền truy cập bị từ chối! Vui lòng dùng tài khoản Admin.",
         );
-        router.push("/login");
+        router.push("/");
       } else {
         // Đúng là cấu trúc quyền Admin tối cao -> Mở cổng giao diện và bốc DB
         setIsCheckingAuth(false);

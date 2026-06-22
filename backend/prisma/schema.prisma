@@ -148,6 +148,10 @@ model Application {
 
   coverLetter String? @db.Text @map("cover_letter")
 
+  cvUrl        String
+
+  cvTextRaw    String?  @db.Text
+
   matchScore Float? @map("match_score")
 
   appliedAt DateTime @default(now()) @map("applied_at")
