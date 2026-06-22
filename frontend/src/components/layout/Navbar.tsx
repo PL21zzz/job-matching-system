@@ -9,6 +9,7 @@ import {
   LogOut,
   Menu,
   Settings,
+  ShieldAlert,
   User,
   X,
   Zap,
@@ -65,18 +66,35 @@ export const Navbar = () => {
     { name: "Về Chúng Tôi", href: "/about" },
   ];
 
-  const dropdownItems = [
-    { name: "Trang cá nhân", href: "/profile", icon: User },
-    {
-      name: "Bàn làm việc",
-      href:
-        user?.role?.name === "EMPLOYER" || user?.role?.name === "Employer"
-          ? "/employer/dashboard"
-          : "/candidate/dashboard",
-      icon: LayoutDashboard,
-    },
-    { name: "Cài đặt", href: "/settings", icon: Settings },
-  ];
+  const getDropdownItems = () => {
+    const roleName = user?.role?.name || user?.role;
+
+    if (roleName === "Admin" || roleName === "ADMIN") {
+      return [
+        {
+          name: "Hệ thống quản trị",
+          href: "/admin/dashboard",
+          icon: ShieldAlert,
+        },
+        { name: "Cài đặt hệ thống", href: "/settings", icon: Settings },
+      ];
+    }
+
+    return [
+      { name: "Trang cá nhân", href: "/profile", icon: User },
+      {
+        name: "Bàn làm việc",
+        href:
+          roleName === "EMPLOYER" || roleName === "Employer"
+            ? "/employer/dashboard"
+            : "/candidate/dashboard",
+        icon: LayoutDashboard,
+      },
+      { name: "Cài đặt", href: "/settings", icon: Settings },
+    ];
+  };
+
+  const dropdownItems = getDropdownItems();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/50 dark:border-white/5 bg-slate-50 dark:bg-surface backdrop-blur-md transition-all">
@@ -137,7 +155,9 @@ export const Navbar = () => {
                       ? "Ứng viên"
                       : user?.role?.name === "Employer"
                         ? "Nhà tuyển dụng"
-                        : user?.role?.name || "Thành viên"}
+                        : user?.role?.name === "Admin"
+                          ? "Quản trị viên"
+                          : user?.role?.name || "Thành viên"}
                   </p>
                 </div>
                 <ChevronDown
