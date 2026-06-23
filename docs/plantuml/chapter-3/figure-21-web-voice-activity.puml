@@ -1,0 +1,20 @@
+@startuml
+title Figure 21. Web Voice Job Assistant Activity Diagram
+start
+:Visually impaired user\nactivates microphone on web;
+:Browser captures speech input;
+:Speech is converted to text;
+:Backend sends text to AI\nfor intent extraction;
+
+if (Intent extracted successfully?) then (Yes)
+  :Build search conditions;
+  :Query suitable jobs from database;
+  :Generate concise response text;
+  :Return job suggestions to web client;
+  :Read response aloud via TTS;
+  stop
+else (No)
+  :Return fallback message\nasking user to repeat;
+  stop
+endif
+@enduml

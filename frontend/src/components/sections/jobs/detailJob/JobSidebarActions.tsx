@@ -7,6 +7,7 @@ import {
   Building2,
   Calendar,
   MapPin,
+  MessageSquare,
   Sparkles,
 } from "lucide-react";
 import { useRouter } from "next/navigation"; // Import hook để chuyển trang
@@ -14,11 +15,13 @@ import { useRouter } from "next/navigation"; // Import hook để chuyển trang
 interface JobSidebarActionsProps {
   job: any;
   onApplyClick: () => void;
+  onInterviewClick: () => void;
 }
 
 export default function JobSidebarActions({
   job,
   onApplyClick,
+  onInterviewClick,
 }: JobSidebarActionsProps) {
   const router = useRouter(); // Khởi tạo router điều hướng
 
@@ -38,6 +41,14 @@ export default function JobSidebarActions({
 
         <Button onClick={onApplyClick}>
           Ứng tuyển ngay <ArrowRight size={16} />
+        </Button>
+
+        <Button
+          variant="secondary"
+          className="mt-2 border-primary/20 bg-primary/5! text-primary normal-case text-xs font-bold"
+          onClick={onInterviewClick}
+        >
+          <MessageSquare size={14} className="text-primary" /> Tập phỏng vấn với AI
         </Button>
 
         <Button

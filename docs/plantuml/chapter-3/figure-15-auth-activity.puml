@@ -1,0 +1,28 @@
+@startuml
+title Figure 15. Authentication Activity Diagram
+start
+:User enters email and password;
+:System validates input format;
+
+if (Valid input?) then (Yes)
+  :Backend finds account by email;
+  if (Account exists and password matches?) then (Yes)
+    if (User status is ACTIVE?) then (Yes)
+      :Generate access token\nand refresh token;
+      :Hash and store refresh token;
+      :Return secure cookies / response;
+      :Login successful;
+      stop
+    else (No)
+      :Notify account is pending or banned;
+      stop
+    endif
+  else (No)
+    :Notify invalid credentials;
+    stop
+  endif
+else (No)
+  :Show input validation error;
+  stop
+endif
+@enduml

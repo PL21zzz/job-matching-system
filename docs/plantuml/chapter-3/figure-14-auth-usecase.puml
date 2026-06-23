@@ -1,0 +1,28 @@
+@startuml
+title Figure 14. Authentication Use Case Diagram
+left to right direction
+skinparam shadowing false
+
+actor "User\n(Candidate / Employer / Admin)" as User
+
+rectangle "Authentication and Security Module" {
+  usecase "Register Account" as U1
+  usecase "Verify OTP via Email" as U2
+  usecase "Login with Email /\nPassword" as U3
+  usecase "Login with Google OAuth 2.0" as U4
+  usecase "Refresh Session Token" as U5
+  usecase "Logout" as U6
+  usecase "Forgot / Reset Password" as U7
+}
+
+User --> U1
+User --> U3
+User --> U4
+User --> U6
+User --> U7
+
+U1 .> U2 : <<include>>
+U3 .> U5 : <<include>>
+U4 .> U5 : <<include>>
+
+@enduml

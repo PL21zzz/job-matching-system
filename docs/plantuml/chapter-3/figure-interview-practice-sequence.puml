@@ -1,0 +1,27 @@
+@startuml
+title AI Interview Practice Sequence Diagram
+actor Candidate
+participant "Next.js Interview Modal" as FE
+participant "NestJS Jobs Controller / Service" as BE
+participant "Google Gemini API" as AI
+database "PostgreSQL (Prisma)" as DB
+
+Candidate -> FE : Open interview practice
+FE -> BE : POST /jobs/{id}/interview-practice\n(message?, history)
+BE -> DB : Load job detail + candidate profile
+DB --> BE : job data + profile data
+BE -> AI : Build prompt with\njob + profile + history
+AI --> BE : reply + focusPoints
+BE --> FE : HTTP 200 OK\n(reply, focusPoints)
+FE --> Candidate : Show feedback and next question
+
+loop Next interview turns
+  Candidate -> FE : Send next answer
+  FE -> BE : POST /jobs/{id}/interview-practice
+  BE -> AI : Continue interview with history
+  AI --> BE : next feedback + question
+  BE --> FE : updated reply + focusPoints
+  FE --> Candidate : Render next turn
+end
+
+@enduml

@@ -14,7 +14,7 @@ export default function CVPreviewArea({
   cvData,
 }: CVPreviewAreaProps) {
   return (
-    <div className="flex-1 bg-slate-950 p-6 xl:p-10 overflow-y-auto flex justify-center items-start border-l border-slate-800 print:p-0 print:bg-white print:overflow-visible">
+    <div className="w-full min-w-0 flex-1 bg-slate-950 p-3 sm:p-6 xl:p-10 overflow-auto flex justify-start lg:justify-center items-start border-l border-slate-800 print:p-0 print:bg-white print:overflow-visible">
       <style jsx global>{`
         @media print {
           body * {

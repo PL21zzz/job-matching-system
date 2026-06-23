@@ -17,27 +17,14 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const token = localStorage.getItem("access_token");
-        let userRole = "";
-
-        if (token) {
-          try {
-            const base64Url = token.split(".")[1];
-            const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-            const payload = JSON.parse(window.atob(base64));
-            setRole(payload.role);
-            userRole = payload.role;
-          } catch (e) {
-            console.error("Lỗi giải mã token tại profile:", e);
-          }
-        }
-
         const data: any = await authService.getProfileMe();
         if (!data) {
           setIsProfileEmpty(true);
           return;
         }
 
+        const userRole = data?.role?.name || data?.role || null;
+        setRole(userRole);
         setProfile(data);
 
         if (userRole === "Candidate") {

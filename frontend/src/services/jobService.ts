@@ -6,6 +6,11 @@ export interface JobFilters {
   categoryId?: string | number;
 }
 
+export interface InterviewHistoryItem {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export const jobService = {
   // 1. Lấy danh sách Job
   getAllJobs: (params?: JobFilters): Promise<any[]> => {
@@ -56,5 +61,15 @@ export const jobService = {
   getEmployerApplications: async (): Promise<any[]> => {
     const response = await api.get("/jobs/employer/applications");
     return response.data?.data || response.data || response;
+  },
+
+  practiceInterview: async (
+    jobId: string,
+    payload: {
+      message?: string;
+      history?: InterviewHistoryItem[];
+    },
+  ): Promise<{ reply: string; focusPoints: string[] }> => {
+    return api.post(`/jobs/${jobId}/interview-practice`, payload);
   },
 };

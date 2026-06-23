@@ -16,9 +16,11 @@ export default function JobHero({ job, aiMatchScore }: JobHeroProps) {
 
         <div className="space-y-3 flex-1">
           <div className="flex flex-wrap gap-2 items-center">
-            <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-              <Sparkles size={10} /> AI Match: {aiMatchScore}%
-            </span>
+            {aiMatchScore > 0 && (
+              <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                <Sparkles size={10} /> Match: {aiMatchScore}%
+              </span>
+            )}
             <span className="px-2.5 py-0.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-wider">
               {job.employer?.companyName || "N/A"}
             </span>

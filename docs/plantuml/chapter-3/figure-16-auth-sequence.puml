@@ -1,0 +1,25 @@
+@startuml
+title Figure 16. Authentication Sequence Diagram
+actor UserClient as User
+participant "NestJS Auth Controller" as Controller
+participant "NestJS Auth Service" as Service
+database "PostgreSQL (Prisma)" as DB
+
+User -> Controller : POST /auth/login\n(email, password)
+Controller -> Service : validateUser(email, password)
+Service -> DB : find user by email
+DB --> Service : user + passwordHash + status
+Service -> Service : compare password using bcrypt
+
+alt password mismatch
+  Service --> Controller : UnauthorizedException
+  Controller --> User : HTTP 401 Unauthorized
+else password matches
+  Service -> Service : generate access token\nand refresh token
+  Service -> DB : update refreshTokenHash
+  DB --> Service : storage success
+  Service --> Controller : token pair + user data
+  Controller --> User : HTTP 200 OK\nSet-Cookie + response payload
+end
+
+@enduml

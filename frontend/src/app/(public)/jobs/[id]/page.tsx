@@ -7,6 +7,7 @@ import { use, useEffect, useState } from "react";
 
 // Import các section mộc vừa tách
 import ApplyJobModal from "@/src/components/sections/jobs/detailJob/ApplyJobModal";
+import InterviewPracticeModal from "@/src/components/sections/jobs/detailJob/InterviewPracticeModal";
 import JobAccessibility from "@/src/components/sections/jobs/detailJob/JobAccessibility";
 import JobContent from "@/src/components/sections/jobs/detailJob/JobContent";
 import JobHero from "@/src/components/sections/jobs/detailJob/JobHero";
@@ -25,8 +26,10 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
   const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [aiMatchScore, setAiMatchScore] = useState<number>(95);
+  const [aiMatchScore] = useState<number>(0);
   const [isApplyModalOpen, setIsApplyModalOpen] = useState<boolean>(false);
+  const [isInterviewModalOpen, setIsInterviewModalOpen] =
+    useState<boolean>(false);
 
   useEffect(() => {
     async function fetchJobDetail() {
@@ -70,7 +73,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
     job.description || "Chưa có mô tả chi tiết từ nhà tuyển dụng.";
 
   return (
-    <div className="w-full h-screen bg-white dark:bg-secondary text-slate-900 dark:text-white flex flex-col overflow-hidden transition-colors duration-300">
+    <div className="w-full min-h-screen bg-white dark:bg-secondary text-slate-900 dark:text-white flex flex-col transition-colors duration-300">
       {/* VÙNG HEADER */}
       <div className="w-full max-w-7xl mx-auto pt-8 pb-4 px-4 sm:px-6 lg:px-8 shrink-0">
         <div className="flex items-center justify-between">
@@ -98,10 +101,10 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
       </div>
 
       {/* VÙNG NỘI DUNG CHÍNH CHIA LÀM CÁC COMPONENT GỌN GÀNG */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 flex-1 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full items-start">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 flex-1">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           {/* CỘT TRÁI (SCROLL ĐỘC LẬP) */}
-          <div className="lg:col-span-2 h-full overflow-y-auto pr-2 space-y-8 scrollbar-thin">
+          <div className="lg:col-span-2 space-y-8">
             <JobHero job={job} aiMatchScore={aiMatchScore} />
             <JobAccessibility job={job} />
             <JobContent
@@ -115,6 +118,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
             <JobSidebarActions
               job={job}
               onApplyClick={() => setIsApplyModalOpen(true)}
+              onInterviewClick={() => setIsInterviewModalOpen(true)}
             />
           </div>
         </div>
@@ -123,6 +127,11 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
       <ApplyJobModal
         isOpen={isApplyModalOpen}
         onClose={() => setIsApplyModalOpen(false)}
+        job={job}
+      />
+      <InterviewPracticeModal
+        isOpen={isInterviewModalOpen}
+        onClose={() => setIsInterviewModalOpen(false)}
         job={job}
       />
     </div>

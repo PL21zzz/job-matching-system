@@ -1,0 +1,30 @@
+@startuml
+title Figure 17. Assistive AI CV Builder Use Case Diagram
+left to right direction
+skinparam shadowing false
+
+actor Candidate
+actor "System AI\n(Gemini)" as AI
+
+rectangle "Assistive AI CV Builder Module" {
+  usecase "Enter Raw Profile /\nExperience Data" as C1
+  usecase "Select Template" as C2
+  usecase "Tailor CV by\nJob Description" as C3
+  usecase "Generate Cover Letter" as C4
+  usecase "Preview CV in Real Time" as C5
+  usecase "Export Flat PDF" as C6
+  usecase "AI Content Optimization" as C7
+}
+
+Candidate --> C1
+Candidate --> C2
+Candidate --> C3
+Candidate --> C4
+Candidate --> C5
+Candidate --> C6
+
+C3 --> C7
+C4 --> C7
+AI --> C7
+
+@enduml

@@ -1,3 +1,4 @@
+import { DISABILITY_FOCUS_OPTIONS, DISABILITY_SUPPORT_GROUPS } from "./disability-support";
 import { Job, JobStatus, JobType } from "../types/job";
 
 export const MOCK_JOBS: Job[] = [
@@ -60,7 +61,7 @@ export const MOCK_JOBS: Job[] = [
     location: "Hồ Chí Minh",
     type: JobType.PART_TIME,
     status: JobStatus.OPEN,
-    accessibilityFeatures: "Ngôn ngữ ký hiệu, Giao tiếp qua văn bản",
+    accessibilityFeatures: "Giao tiếp qua văn bản, Có phụ đề cho video hoặc nội dung đào tạo",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     employer: {
@@ -72,13 +73,8 @@ export const MOCK_JOBS: Job[] = [
   },
 ];
 
-// Danh sách các Feature để dùng cho bộ lọc (Filter)
-export const ACCESSIBILITY_OPTIONS = [
-  "Lối đi xe lăn",
-  "Trình đọc màn hình",
-  "Ngôn ngữ ký hiệu",
-  "Hỗ trợ trợ thính",
-  "Làm việc từ xa",
-  "Thời gian linh hoạt",
-  "Giao tiếp qua văn bản",
-];
+export const ACCESSIBILITY_OPTIONS = Array.from(
+  new Set(DISABILITY_SUPPORT_GROUPS.flatMap((group) => group.accommodations)),
+);
+
+export { DISABILITY_FOCUS_OPTIONS };

@@ -1,7 +1,8 @@
 "use client";
 
+import { authService } from "@/src/services/authService";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
 export default function ProtectedLayout({
@@ -13,66 +14,63 @@ export default function ProtectedLayout({
   const pathname = usePathname();
   const [isVerified, setIsVerified] = useState(false);
 
-  const hasToasted = useRef(false);
-
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    authService
+      .getProfileMe()
+      .then((user) => {
+        const role = user?.role?.name || user?.role;
+        const normalizedRole = String(role || "").toLowerCase();
 
-    const getRoleFromToken = (tokenStr: string | null) => {
-      if (!tokenStr) return null;
-      try {
-        const base64Url = tokenStr.split(".")[1];
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        return JSON.parse(window.atob(base64)).role || null;
-      } catch (e) {
-        return null;
-      }
-    };
+        const candidateOnlyPaths = [
+          "/resumes",
+          "/stories/manage",
+        ];
+        const employerOnlyPaths = ["/employer/create-job", "/employer/manage-jobs"];
+        const adminOnlyPaths = ["/admin"];
 
-    const userRole = getRoleFromToken(token);
+        if (!role && pathname !== "/onboarding") {
+          router.replace("/onboarding");
+          return;
+        }
+        if (role && pathname === "/onboarding") {
+          router.replace("/");
+          return;
+        }
+        if (
+          candidateOnlyPaths.some((path) => pathname.startsWith(path)) &&
+          normalizedRole !== "candidate"
+        ) {
+          toast.error("Khu vực này chỉ dành cho ứng viên.");
+          router.replace("/");
+          return;
+        }
 
-    // 1. Chưa đăng nhập
-    if (!token) {
-      router.replace("/login");
-    }
-    // 2. Tài khoản Google mới chưa onboarding
-    else if (token && !userRole && pathname !== "/onboarding") {
-      router.replace("/onboarding");
-    }
-    // 3. Đã có role nhưng cố tình vào lại onboarding
-    else if (token && userRole && pathname === "/onboarding") {
-      router.replace("/");
-    }
-    // 4. CHẶN ỨNG VIÊN - PHIÊN BẢN TỐI ƯU CHỐNG SPAM TOAST
-    else if (
-      token &&
-      userRole?.toLowerCase() === "candidate" &&
-      pathname.includes("/employer")
-    ) {
-      if (!hasToasted.current) {
-        toast.error(
-          "Bạn không phải là nhà tuyển dụng! Không thể truy cập khu vực này.",
-        );
-        hasToasted.current = true;
-      }
+        if (
+          employerOnlyPaths.some((path) => pathname.startsWith(path)) &&
+          normalizedRole !== "employer"
+        ) {
+          toast.error("Khu vực này chỉ dành cho nhà tuyển dụng.");
+          router.replace("/");
+          return;
+        }
 
-      if (typeof window !== "undefined" && window.history.length > 1) {
-        router.back();
-      } else {
-        router.replace("/");
-      }
-    }
-    // Đã qua các vòng kiểm tra -> Hợp lệ hoàn toàn
-    else {
-      setIsVerified(true);
-      hasToasted.current = false;
-    }
+        if (
+          adminOnlyPaths.some((path) => pathname.startsWith(path)) &&
+          normalizedRole !== "admin"
+        ) {
+          toast.error("Khu vực này chỉ dành cho quản trị viên.");
+          router.replace("/");
+          return;
+        }
+        setIsVerified(true);
+      })
+      .catch(() => router.replace("/login"));
   }, [pathname, router]);
 
   if (!isVerified) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-secondary">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
+      <div className="min-h-screen grid place-items-center bg-white dark:bg-secondary">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary" />
       </div>
     );
   }

@@ -1,5 +1,7 @@
 "use client";
 
+import { clearLegacyAuthStorage } from "@/src/lib/auth-storage";
+import { useAuthStore } from "@/src/store/useAuthStore";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import * as React from "react";
 
@@ -16,6 +18,13 @@ if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const syncAuth = useAuthStore((state) => state.syncAuth);
+
+  React.useEffect(() => {
+    clearLegacyAuthStorage();
+    void syncAuth();
+  }, [syncAuth]);
+
   return (
     <NextThemesProvider
       attribute="class"

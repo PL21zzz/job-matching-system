@@ -31,7 +31,7 @@ export default function CVFormSidebar({
   onAwardChange,
 }: CVFormSidebarProps) {
   return (
-    <div className="w-105 xl:w-115 bg-slate-800 border-r border-slate-700 flex flex-col overflow-y-auto p-5 space-y-5 shrink-0 select-text custom-scrollbar">
+    <div className="w-full lg:w-105 xl:w-115 bg-slate-800 border-r border-slate-700 flex flex-col overflow-y-auto p-4 sm:p-5 space-y-5 lg:shrink-0 select-text custom-scrollbar">
       <div className="pb-1 border-b border-slate-700">
         <h4 className="text-sm font-black text-white uppercase tracking-tight">
           Trình chỉnh sửa nội dung

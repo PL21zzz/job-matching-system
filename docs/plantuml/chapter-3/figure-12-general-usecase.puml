@@ -1,0 +1,66 @@
+@startuml
+title Figure 12. General Use Case Diagram
+left to right direction
+skinparam shadowing false
+
+actor Candidate
+actor Employer
+actor Admin
+actor "System AI\n(Gemini / Voice Services)" as AI
+
+rectangle "Equitas AI System" {
+  usecase "Register / Login /\nGoogle Login" as UC1
+  usecase "Verify OTP Email" as UC2
+  usecase "Maintain Refresh Token\nSession" as UC3
+  usecase "Manage Candidate Profile" as UC4
+  usecase "Search Jobs with\nAccessibility Filters" as UC5
+  usecase "Generate / Tailor CV\nby Job Description" as UC6
+  usecase "Generate Cover Letter" as UC7
+  usecase "Practice Interview with AI" as UC8
+  usecase "Apply for Job" as UC9
+  usecase "Use Web Voice Job Assistant" as UC10
+  usecase "Create / Manage Stories" as UC11
+
+  usecase "Manage Employer Profile" as UC12
+  usecase "Create Inclusive Job Post" as UC13
+  usecase "Configure Structured\nAccommodations" as UC14
+  usecase "Review Applications" as UC15
+  usecase "Update Application Status" as UC16
+
+  usecase "View Dashboard Statistics" as UC17
+  usecase "Manage Users" as UC18
+  usecase "Review Jobs and Applications" as UC19
+
+  usecase "AI Text Generation /\nIntent Processing" as UC20
+}
+
+Candidate --> UC1
+Candidate --> UC4
+Candidate --> UC5
+Candidate --> UC6
+Candidate --> UC7
+Candidate --> UC8
+Candidate --> UC9
+Candidate --> UC10
+Candidate --> UC11
+
+Employer --> UC1
+Employer --> UC12
+Employer --> UC13
+Employer --> UC14
+Employer --> UC15
+Employer --> UC16
+
+Admin --> UC17
+Admin --> UC18
+Admin --> UC19
+
+UC1 .> UC2 : <<include>>
+UC1 .> UC3 : <<include>>
+UC6 --> UC20
+UC7 --> UC20
+UC8 --> UC20
+UC10 --> UC20
+AI --> UC20
+
+@enduml

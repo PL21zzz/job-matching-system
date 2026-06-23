@@ -39,21 +39,6 @@ export default function ProfileEditPage() {
 
   useEffect(() => {
     const fetchCurrentProfile = async () => {
-      const token = localStorage.getItem("access_token");
-      if (!token) {
-        setFetching(false);
-        return;
-      }
-
-      let userRole: "Candidate" | "Employer" | null = null;
-      try {
-        const payload = JSON.parse(window.atob(token.split(".")[1]));
-        setRole(payload.role);
-        userRole = payload.role;
-      } catch (e) {
-        console.error("Lỗi giải mã token:", e);
-      }
-
       try {
         const [typesResponse, profileResponse] = await Promise.all([
           jobService.getDisabilityTypes(),
@@ -69,6 +54,11 @@ export default function ProfileEditPage() {
 
         const data = profileResponse?.data || profileResponse;
         if (data) {
+          const userRole = (data?.role?.name || data?.role || null) as
+            | "Candidate"
+            | "Employer"
+            | null;
+          setRole(userRole);
           setFullName(data.fullName || "");
 
           if (userRole === "Candidate" && data.candidateProfile) {

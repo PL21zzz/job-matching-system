@@ -4,6 +4,8 @@ import AccessibilityOptionForm from "@/src/components/sections/jobs/createJob/Ac
 import BaseJobForm from "@/src/components/sections/jobs/createJob/BaseJobForm";
 import SalaryDetailForm from "@/src/components/sections/jobs/createJob/SalaryDetailForm";
 import Button from "@/src/components/ui/Button";
+import { DISABILITY_SUPPORT_GROUPS } from "@/src/constants/disability-support";
+import { serializeJobAccessibility } from "@/src/lib/job-accessibility";
 import { jobService } from "@/src/services/jobService";
 import { Loader2, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -16,10 +18,9 @@ export default function CreateJobPage() {
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categories, setCategories] = useState<any[]>([]);
   const [errorMsg, setErrorMsg] = useState("");
-  const [disabilityTypes, setDisabilityTypes] = useState<any[]>([]);
-  const [suitableDisabilityIds, setSuitableDisabilityIds] = useState<number[]>(
-    [],
-  );
+  const [suitableDisabilityIds, setSuitableDisabilityIds] = useState<number[]>([]);
+  const [selectedAccommodationsByType, setSelectedAccommodationsByType] =
+    useState<Record<number, string[]>>({});
 
   const [formData, setFormData] = useState({
     title: "",
@@ -32,10 +33,6 @@ export default function CreateJobPage() {
     description: "",
     requirements: "",
   });
-
-  const [selectedAccessibility, setSelectedAccessibility] = useState<string[]>(
-    [],
-  );
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -52,20 +49,6 @@ export default function CreateJobPage() {
     loadCategories();
   }, []);
 
-  useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        const types = await jobService.getDisabilityTypes();
-        if (Array.isArray(types)) {
-          setDisabilityTypes(types);
-        }
-      } catch (error) {
-        console.error("Không thể tải danh mục khuyết tật:", error);
-      }
-    };
-    loadInitialData();
-  }, []);
-
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -75,26 +58,75 @@ export default function CreateJobPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCheckboxChange = (option: string) => {
-    setSelectedAccessibility((prev) =>
-      prev.includes(option)
-        ? prev.filter((item) => item !== option)
-        : [...prev, option],
-    );
+  const handleToggleDisability = (id: number) => {
+    setSuitableDisabilityIds((prev) => {
+      const exists = prev.includes(id);
+      if (exists) {
+        setSelectedAccommodationsByType((current) => ({
+          ...current,
+          [id]: [],
+        }));
+        return prev.filter((item) => item !== id);
+      }
+
+      return [...prev, id];
+    });
   };
 
-  const handleCheckboxDis = (id: number) => {
-    setSuitableDisabilityIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
+  const handleToggleAccommodation = (disabilityTypeId: number, value: string) => {
+    setSelectedAccommodationsByType((prev) => {
+      const current = prev[disabilityTypeId] || [];
+      const next = current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value];
+
+      return {
+        ...prev,
+        [disabilityTypeId]: next,
+      };
+    });
+  };
+
+  const validateAccessibility = () => {
+    if (!suitableDisabilityIds.length) {
+      return "Bạn cần chọn ít nhất 1 trong 4 nhóm khuyết tật mục tiêu.";
+    }
+
+    for (const disabilityTypeId of suitableDisabilityIds) {
+      const selected = selectedAccommodationsByType[disabilityTypeId] || [];
+      if (!selected.length) {
+        const label =
+          DISABILITY_SUPPORT_GROUPS.find((item) => item.id === disabilityTypeId)
+            ?.label || `Nhóm ${disabilityTypeId}`;
+        return `Nhóm "${label}" cần có ít nhất 1 accommodation cụ thể.`;
+      }
+    }
+
+    return "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
+
+    const accessibilityError = validateAccessibility();
+    if (accessibilityError) {
+      setErrorMsg(accessibilityError);
+      return;
+    }
+
     setLoading(true);
 
     try {
+      const accessibilityFeatures = serializeJobAccessibility(
+        suitableDisabilityIds.map((id) => ({
+          disabilityTypeId: id,
+          disabilityTypeName:
+            DISABILITY_SUPPORT_GROUPS.find((item) => item.id === id)?.label,
+          accommodations: selectedAccommodationsByType[id] || [],
+        })),
+      );
+
       const payload = {
         title: formData.title,
         categoryId: Number(formData.categoryId),
@@ -105,12 +137,12 @@ export default function CreateJobPage() {
         salaryText: formData.salaryText || null,
         description: formData.description,
         requirements: formData.requirements,
-        accessibilityFeatures: selectedAccessibility.join(", ") || null,
-        suitableDisabilityIds: suitableDisabilityIds,
+        accessibilityFeatures,
+        suitableDisabilityIds,
       };
 
       await jobService.createJob(payload);
-      toast.success("Đăng tin tuyển dụng thành công! 🔥");
+      toast.success("Đăng tin tuyển dụng thành công!");
       router.push("/jobs");
     } catch (error: any) {
       setErrorMsg(error?.message || "Đã xảy ra lỗi khi đăng tin tuyển dụng.");
@@ -120,27 +152,27 @@ export default function CreateJobPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-6 text-slate-900 dark:text-white transition-colors duration-300">
+    <div className="max-w-5xl mx-auto py-6 text-slate-900 dark:text-white transition-colors duration-300">
       <div className="mb-8">
         <p className="text-xs font-medium text-slate-400 dark:text-gray-500 mb-1">
           Nhà tuyển dụng / Đăng tin mới
         </p>
         <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900 dark:text-white">
-          TẠO BÀI ĐĂNG TUYỂN DỤNG
+          Tạo bài đăng tuyển dụng
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Hệ thống tự động đồng bộ hóa danh mục ngành nghề thời gian thực.
+          Vị trí sẽ được chuẩn hóa theo 4 nhóm khuyết tật mục tiêu để AI và bộ
+          lọc tìm việc hiểu đúng ngay từ đầu.
         </p>
       </div>
 
       {errorMsg && (
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl text-sm font-bold text-red-600 dark:text-red-400">
-          ⚠ {errorMsg}
+          {errorMsg}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* SECTION 1: CƠ BẢN */}
         <BaseJobForm
           formData={formData}
           handleInputChange={handleInputChange}
@@ -148,22 +180,18 @@ export default function CreateJobPage() {
           categoriesLoading={categoriesLoading}
         />
 
-        {/* SECTION 2: ĐÃI NGỘ & MÔ TẢ */}
         <SalaryDetailForm
           formData={formData}
           handleInputChange={handleInputChange}
         />
 
-        {/* SECTION 3: TRỢ NĂNG ĐẶC THÙ & PHÂN LOẠI ỨNG VIÊN */}
         <AccessibilityOptionForm
-          selectedAccessibility={selectedAccessibility}
-          handleCheckboxChange={handleCheckboxChange}
-          disabilityTypes={disabilityTypes}
           suitableDisabilityIds={suitableDisabilityIds}
-          handleCheckboxDis={handleCheckboxDis}
+          selectedAccommodationsByType={selectedAccommodationsByType}
+          handleToggleDisability={handleToggleDisability}
+          handleToggleAccommodation={handleToggleAccommodation}
         />
 
-        {/* ACTIONS BUTTONS */}
         <div className="flex items-center justify-end gap-4 pt-2">
           <Button
             type="button"

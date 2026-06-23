@@ -2,7 +2,6 @@
 
 import { useAuthStore } from "@/src/store/useAuthStore";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { jwtDecode } from "jwt-decode";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
@@ -24,21 +23,10 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginInput) => {
     try {
-      const response = await axiosInstance.post("/auth/login", data);
+      const response: any = await axiosInstance.post("/auth/login", data);
 
-      if (response.status === 200 || response.status === 201) {
-        const { access_token, refresh_token } = response.data;
-
-        // 1. Lưu token vào máy
-        localStorage.setItem("access_token", access_token);
-        localStorage.setItem("refresh_token", refresh_token);
-
-        // 2. GIẢI MÃ TOKEN ĐỂ LẤY DATA THẬT (id, email, role...)
-        const decodedUser = jwtDecode(access_token);
-
-        // 3. CẬP NHẬT STORE NGAY LẬP TỨC
-        setAuth(decodedUser);
-
+      if (response?.user) {
+        setAuth(response.user);
         toast.success("Đăng nhập thành công!");
         router.push("/");
       }

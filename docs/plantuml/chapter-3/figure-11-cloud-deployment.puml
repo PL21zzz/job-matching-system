@@ -1,0 +1,34 @@
+@startuml
+title Figure 11. Cloud and Deployment Architecture
+left to right direction
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Web User\n(Candidate / Employer / Admin)" as user
+
+node "Production VPS\n(Ubuntu Server)" as vps {
+  component "Nginx Reverse Proxy\n+ SSL Termination" as nginx
+
+  frame "Docker Bridge Network" {
+    component "Next.js Container\n(Web Frontend :3000)" as fe
+    component "NestJS Container\n(Backend API :3001)" as be
+    database "PostgreSQL Container\n(:5432, internal only)" as pg
+  }
+}
+
+cloud "External Services" as ext {
+  component "Google Gemini API" as gemini
+  component "Cloudinary" as cloudinary
+  component "FPT AI TTS" as fpt
+}
+
+user --> nginx : HTTPS (80 / 443)
+nginx --> fe : web pages
+nginx --> be : API streams
+fe --> be : Axios / Fetch requests
+be --> pg : Prisma ORM (internal network only)
+be --> gemini : AI prompts and responses
+be --> cloudinary : CV upload
+be --> fpt : text-to-speech
+
+@enduml

@@ -1,0 +1,27 @@
+@startuml
+title Figure 18. Assistive AI CV Builder Activity Diagram
+start
+:Candidate selects\n"Tailor CV by Job";
+:Enter experience data\nand target JD;
+:Click AI optimization button;
+:Frontend sends request\nto NestJS backend;
+:Backend builds prompt\nand sends to Gemini API;
+:Gemini analyzes context\nand returns structured output;
+
+if (AI response valid?) then (Yes)
+  :Backend returns clean data;
+  :Frontend renders updated CV preview;
+  if (User clicks Export PDF?) then (Yes)
+    :html2canvas captures DOM layout;
+    :jsPDF converts canvas to flat PDF;
+    :Download CV PDF;
+    stop
+  else (No)
+    :Keep preview on screen;
+    stop
+  endif
+else (No)
+  :Notify AI generation failure\nand allow retry;
+  stop
+endif
+@enduml

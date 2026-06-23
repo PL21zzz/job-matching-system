@@ -1,57 +1,48 @@
 "use client";
-import { Star } from "lucide-react";
+
+import { storyService, Story } from "@/src/services/storyService";
+import { ArrowRight, Star } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { SectionHeading } from "../../ui/SectionHeading";
 
 export default function Testimonials() {
-  const list = [
-    {
-      text: "Là một dev khiếm thính, rào cản giao tiếp từng khiến tôi mất đi nhiều cơ hội. Qua Equitas AI, tôi được kết nối trực tiếp với công ty có sẵn văn hóa hỗ trợ đặc thù.",
-      user: "Nguyễn Văn Hùng",
-      role: "Software Engineer",
-    },
-    {
-      text: "Công nghệ ẩn thông tin cá nhân của AI thực sự làm thay đổi quy trình tuyển dụng của chúng tôi. Chúng tôi tập trung 100% vào năng lực thực tế.",
-      user: "Chị Mai Linh",
-      role: "HR Manager @ Novaha Lab",
-    },
-    {
-      text: "Tôi bị khuyết tật vận động, việc tìm việc remote vô cùng gian nan. Nhờ bộ lọc tiện ích của hệ thống, ước mơ của tôi đã thành sự thật.",
-      user: "Trần Thanh Vy",
-      role: "Data Specialist",
-    },
-  ];
+  const [stories, setStories] = useState<Story[]>([]);
+
+  useEffect(() => {
+    storyService.list().then((data) => setStories(data.slice(0, 3))).catch(() => undefined);
+  }, []);
+
+  if (stories.length === 0) return null;
 
   return (
-    <section className="py-16 md:py-24 bg-white dark:bg-secondary transition-colors border-y border-slate-100 dark:border-white/5">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+    <section className="border-y border-slate-100 bg-white py-16 transition-colors dark:border-white/5 dark:bg-secondary md:py-24">
+      <div className="mx-auto max-w-7xl space-y-12 px-4 sm:px-6 lg:px-8">
         <SectionHeading
           title="Câu Chuyện Thành Công"
-          description="Chia sẻ thực tế từ các ứng viên và đối tác của chúng tôi."
+          description="Chia sẻ thực tế do chính ứng viên Equitas đăng tải."
         />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {list.map((item, i) => (
-            <div
-              key={i}
-              className="bg-slate-50 dark:bg-surface p-8 rounded-3xl border border-slate-100 dark:border-white/5 space-y-6"
-            >
-              <div className="flex gap-1 text-amber-400">
-                {[...Array(5)].map((_, idx) => (
-                  <Star key={idx} size={16} fill="currentColor" />
-                ))}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {stories.map((story) => (
+            <article key={story.id} className="space-y-5 rounded-3xl border border-slate-100 bg-slate-50 p-6 dark:border-white/5 dark:bg-surface sm:p-8">
+              <div className="flex gap-1 text-amber-400" aria-label="Câu chuyện nổi bật">
+                {[...Array(5)].map((_, index) => <Star key={index} size={16} fill="currentColor" />)}
               </div>
-              <p className="text-slate-600 dark:text-gray-300 text-sm italic leading-relaxed">
-                &ldquo;{item.text}&rdquo;
+              <h3 className="text-lg font-black">{story.title}</h3>
+              <p className="line-clamp-5 text-sm italic leading-relaxed text-slate-600 dark:text-gray-300">
+                “{story.content}”
               </p>
-              <div className="border-t border-slate-200/50 dark:border-white/5 pt-4">
-                <p className="font-extrabold text-slate-950 dark:text-white">
-                  {item.user}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
-                  {item.role}
-                </p>
-              </div>
-            </div>
+              <footer className="border-t border-slate-200/50 pt-4 dark:border-white/5">
+                <p className="font-extrabold">{story.authorName}</p>
+                <p className="mt-0.5 text-xs text-slate-500">{story.authorRole}</p>
+              </footer>
+            </article>
           ))}
+        </div>
+        <div className="text-center">
+          <Link href="/stories" className="inline-flex items-center gap-2 font-bold text-primary">
+            Xem tất cả câu chuyện <ArrowRight size={16} />
+          </Link>
         </div>
       </div>
     </section>

@@ -1,0 +1,22 @@
+@startuml
+title Figure 22. Web Voice Job Assistant Sequence Diagram
+actor "Browser User" as User
+participant "Web Voice UI\n(Next.js + Web Speech API)" as WebUI
+participant "NestJS Career Assistant API" as API
+participant "Google Gemini API" as Gemini
+database "PostgreSQL (Prisma)" as DB
+participant "TTS Service" as TTS
+
+User -> WebUI : speak job request
+WebUI -> WebUI : speech-to-text
+WebUI -> API : POST /career-assistant/chat\n(message, profileSummary, needs)
+API -> Gemini : analyze intent + rank response
+Gemini --> API : suggested response / reasoning
+API -> DB : fetch suitable jobs
+DB --> API : matching jobs
+API -> TTS : synthesize response audio
+TTS --> API : audioUrl / spoken output
+API --> WebUI : answer + suggestedJobs + audioUrl
+WebUI --> User : spoken feedback + job suggestions
+
+@enduml

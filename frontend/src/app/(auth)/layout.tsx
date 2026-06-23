@@ -45,8 +45,8 @@ export default function AuthLayout({
       </div>
 
       {/* 🔵 PANEL PHẢI: NƠI CHỨA FORM */}
-      <div className="w-full lg:w-1/2 lg:ml-[50%] flex items-center justify-center p-8 md:p-16 bg-slate-50/50 dark:bg-secondary transition-colors duration-300">
-        <div className="w-full max-w-md bg-white dark:bg-[#0b0f19] p-10 md:p-12 rounded-3xl shadow-sm dark:shadow-2xl border border-slate-100 dark:border-white/5 transition-colors duration-300">
+      <div className="w-full lg:w-1/2 lg:ml-[50%] flex items-center justify-center p-4 sm:p-8 md:p-16 bg-slate-50/50 dark:bg-secondary transition-colors duration-300">
+        <div className="w-full max-w-md bg-white dark:bg-[#0b0f19] p-6 sm:p-10 md:p-12 rounded-2xl sm:rounded-3xl shadow-sm dark:shadow-2xl border border-slate-100 dark:border-white/5 transition-colors duration-300">
           {children}
         </div>
       </div>

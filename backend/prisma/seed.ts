@@ -1,12 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 
-// Khởi tạo trực tiếp không truyền param lỗi engine
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🚀 Bắt đầu nạp Master Data...');
 
-  // --- Bảng Roles ---
   const roles = [
     { id: 1, name: 'Admin' },
     { id: 2, name: 'Employer' },
@@ -21,52 +19,30 @@ async function main() {
     });
   }
 
-  // --- Bảng DisabilityType (8 danh mục phẳng, ngắn gọn, chuẩn gu sếp) ---
   const disabilityTypes = [
     {
       id: 1,
       name: 'Khuyết tật vận động',
       description:
-        'Khó khăn trong di chuyển, cầm nắm do khiếm khuyết cơ, xương, khớp.',
+        'Khó khăn trong di chuyển, đứng lâu hoặc thao tác thể chất cần hỗ trợ.',
     },
     {
       id: 2,
-      name: 'Khuyết tật thị giác',
-      description: 'Người khiếm thị hoặc giảm thị lực nặng.',
+      name: 'Khiếm thị',
+      description:
+        'Người mù hoặc suy giảm thị lực, cần công cụ đọc màn hình và điều hướng rõ ràng.',
     },
     {
       id: 3,
-      name: 'Khuyết tật thính giác',
-      description: 'Khó khăn trong việc nghe hoặc giao tiếp bằng âm thanh.',
+      name: 'Khiếm thính',
+      description:
+        'Khó khăn trong việc nghe, phù hợp môi trường giao tiếp bằng chữ và trực quan.',
     },
     {
       id: 4,
-      name: 'Khuyết tật ngôn ngữ',
+      name: 'Câm',
       description:
-        'Gặp trở ngại trong phát âm hoặc sử dụng ngôn ngữ giao tiếp.',
-    },
-    {
-      id: 5,
-      name: 'Khuyết tật trí tuệ',
-      description:
-        'Suy giảm khả năng nhận thức, học tập hoặc chậm phát triển trí tuệ.',
-    },
-    {
-      id: 6,
-      name: 'Khuyết tật thần kinh',
-      description:
-        'Gặp các hội chứng tự kỷ, rối loạn phổ tự kỷ hoặc tổn thương hệ thần kinh.',
-    },
-    {
-      id: 7,
-      name: 'Khuyết tật tinh thần',
-      description:
-        'Mắc các bệnh lý tâm thần phân liệt, trầm cảm nặng hoặc rối loạn tâm thần.',
-    },
-    {
-      id: 8,
-      name: 'Đa khuyết tật',
-      description: 'Người mắc đồng thời từ hai loại khuyết tật trở lên.',
+        'Khó khăn trong phát âm hoặc giao tiếp bằng lời nói, ưu tiên trao đổi qua văn bản.',
     },
   ];
 
@@ -81,7 +57,7 @@ async function main() {
     });
   }
 
-  console.log('✅ Đã nạp xong Roles và 8 DisabilityTypes sạch sẽ!');
+  console.log('✅ Đã nạp xong Roles và 4 DisabilityTypes mục tiêu!');
 }
 
 main()

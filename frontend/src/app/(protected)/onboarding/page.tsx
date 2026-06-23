@@ -17,15 +17,11 @@ export default function OnboardingPage() {
     if (!selectedRole) return;
     setLoading(true);
     try {
-      const response = await api.patch("/users/profile/edit", {
+      await api.patch("/users/onboarding", {
         role: selectedRole,
       });
-
-      if (response.data?.access_token) {
-        localStorage.setItem("access_token", response.data.access_token);
-        toast.success("Cấu hình vai trò thành công!");
-        router.push("/profile/edit");
-      }
+      toast.success("Cấu hình vai trò thành công!");
+      router.push("/profile/edit");
     } catch (error: any) {
       console.error("Lỗi cấu hình vai trò:", error);
       toast.error(
@@ -42,7 +38,7 @@ export default function OnboardingPage() {
       <div className="absolute top-8 right-8 z-50">
         <button
           onClick={() => {
-            localStorage.removeItem("access_token");
+            api.post("/auth/logout").catch(() => undefined);
             router.push("/login");
             router.refresh();
           }}

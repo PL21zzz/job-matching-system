@@ -9,7 +9,9 @@ import { UsersModule } from './users/users.module';
 import { JobsModule } from './jobs/jobs.module';
 import { ResumesModule } from './resumes/resumes.module';
 import { AdminModule } from './admin/admin.module';
+import { CareerAssistantModule } from './career-assistant/career-assistant.module';
 import { VoiceModule } from './voice/voice.module';
+import { StoriesModule } from './stories/stories.module';
 
 @Module({
   imports: [
@@ -21,7 +23,9 @@ import { VoiceModule } from './voice/voice.module';
     JobsModule,
     ResumesModule,
     AdminModule,
+    CareerAssistantModule,
     VoiceModule,
+    StoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

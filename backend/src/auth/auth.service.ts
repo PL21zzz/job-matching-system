@@ -197,10 +197,15 @@ export class AuthService {
       });
     }
 
-    const payload = { sub: user.id, email: user.email, role: user.role?.name };
+    const tokens = await this.getTokens(
+      user.id,
+      user.email,
+      user.role?.name || '',
+    );
+    await this.updateRefreshTokenHash(user.id, tokens.refresh_token);
 
     return {
-      access_token: await this.jwtService.signAsync(payload),
+      ...tokens,
       isNewUser,
     };
   }
@@ -298,14 +303,19 @@ export class AuthService {
 
   // 8. Hàm tạo cặp Token
   async getTokens(userId: string, email: string, role: string) {
+    const accessExpiresIn = (process.env.JWT_ACCESS_EXPIRES_IN ||
+      '15m') as any;
+    const refreshExpiresIn = (process.env.JWT_REFRESH_EXPIRES_IN ||
+      '1d') as any;
+
     const [at, rt] = await Promise.all([
       this.jwtService.signAsync(
         { sub: userId, email, role },
-        { secret: process.env.JWT_SECRET, expiresIn: '15m' }, // AT sống 15p
+        { secret: process.env.JWT_SECRET, expiresIn: accessExpiresIn },
       ),
       this.jwtService.signAsync(
         { sub: userId, email, role },
-        { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' }, // RT sống 7 ngày
+        { secret: process.env.JWT_REFRESH_SECRET, expiresIn: refreshExpiresIn },
       ),
     ]);
 

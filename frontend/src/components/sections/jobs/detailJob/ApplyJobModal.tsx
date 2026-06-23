@@ -90,9 +90,9 @@ export default function ApplyJobModal({
       />
 
       {/* Main Modal Box */}
-      <div className="relative w-full max-w-2xl bg-white dark:bg-secondary rounded-3xl border border-slate-200 dark:border-white/5 shadow-2xl overflow-hidden transform transition-all duration-300 animate-in fade-in zoom-in-95">
+      <div className="relative w-full max-w-2xl max-h-[94vh] bg-white dark:bg-secondary rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-white/5 shadow-2xl overflow-hidden transform transition-all duration-300 animate-in fade-in zoom-in-95">
         {/* HEADER */}
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-border-subtle flex items-center justify-between select-none">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-border-subtle flex items-center justify-between select-none">
           <div>
             <h3 className="text-base font-black uppercase tracking-tight text-slate-900 dark:text-white">
               Nộp đơn ứng tuyển vị trí
@@ -110,7 +110,7 @@ export default function ApplyJobModal({
         </div>
 
         {/* BODY */}
-        <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-5 max-h-[78vh] overflow-y-auto">
           {submitSuccess ? (
             /* THÀNH CÔNG */
             <div className="py-8 flex flex-col items-center justify-center text-center space-y-3 select-none">
@@ -140,7 +140,7 @@ export default function ApplyJobModal({
                 <label className="flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-surface border-2 border-dashed border-slate-200 dark:border-white/5 rounded-2xl cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-800/30 transition-all group">
                   <input
                     type="file"
-                    accept=".pdf,.doc,.docx"
+                    accept=".pdf,.txt"
                     className="hidden"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
@@ -174,7 +174,7 @@ export default function ApplyJobModal({
                             Chọn hoặc kéo thả tệp tin CV vào đây
                           </p>
                           <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-0.5">
-                            Chấp nhận định dạng PDF, DOCX tối đa 5MB
+                            Chấp nhận PDF hoặc TXT, tối đa 5MB
                           </p>
                         </div>
                       </>
@@ -223,7 +223,7 @@ export default function ApplyJobModal({
               </div>
 
               {/* FOOTER ACTIONS */}
-              <div className="pt-3 border-t border-slate-100 dark:border-border-subtle flex justify-end gap-3 select-none">
+              <div className="pt-3 border-t border-slate-100 dark:border-border-subtle flex flex-col-reverse sm:flex-row sm:justify-end gap-3 select-none">
                 <Button
                   variant="secondary"
                   onClick={onClose}

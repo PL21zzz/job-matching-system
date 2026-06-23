@@ -4,6 +4,7 @@ import { VoiceService } from './voice.service';
 
 @Module({
   controllers: [VoiceController],
-  providers: [VoiceService]
+  providers: [VoiceService],
+  exports: [VoiceService],
 })
 export class VoiceModule {}

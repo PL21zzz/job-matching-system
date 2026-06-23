@@ -1,96 +1,131 @@
-# 🌟 Hệ Thống Hỗ Trợ Tìm Kiếm Việc Làm Cho Người Khuyết Tật (AI-Powered Job Search Support System for People with Disabilities)
+# Equitas AI — Nền tảng việc làm hòa nhập
 
-Một nền tảng toàn diện (Web & Mobile) ứng dụng Trí tuệ nhân tạo (AI) nhằm xóa bỏ rào cản tìm việc cho người khuyết tật, đồng thời giúp doanh nghiệp tiếp cận nguồn nhân lực đặc thù một cách hiệu quả.
+Equitas AI là hệ thống tuyển dụng trên web dành cho người khuyết tật, kết nối ứng viên, nhà tuyển dụng và quản trị viên. Dự án ưu tiên khả năng tiếp cận ngay trên trình duyệt, không còn tách riêng ứng dụng mobile.
 
-## 🚀 Kiến trúc hệ thống (Tech Stack)
+## Công nghệ
 
-Hệ thống được thiết kế theo kiến trúc Microservices và phát triển đa nền tảng, đảm bảo mọi đối tượng người dùng có trải nghiệm đồng bộ trên mọi thiết bị.
+- Frontend: Next.js 16, React 19, TypeScript, Tailwind CSS.
+- Backend: NestJS 11, Prisma ORM.
+- Database: PostgreSQL.
+- AI: Gemini cho CV và cover letter.
+- Match score: bộ chấm ATS nội bộ, không cần API trả phí.
+- Lưu trữ CV: Cloudinary.
+- Email: Nodemailer.
+- Voice: Gemini Speech-to-Text và FPT Text-to-Speech.
 
-- **Frontend (Web Portal):** Next.js (React) - Tối ưu hóa SEO, phục vụ Admin, Nhà tuyển dụng và Ứng viên.
-- **Mobile App:** React Native - Ứng dụng di động linh hoạt tích hợp Voice AI.
-- **Core Backend:** NestJS (Node.js) - Xử lý nghiệp vụ trung tâm, cung cấp RESTful API, xác thực JWT.
-- **AI Microservice:** Python (FastAPI/Flask) - Xử lý mô hình ngôn ngữ lớn (LLM).
-- **Database:** PostgreSQL.
-- **DevOps:** Docker, Docker Compose, GitHub Actions (CI/CD), VPS Ubuntu.
+## Chức năng
 
-## ✨ Tính năng cốt lõi
+### Ứng viên
 
-1. **Đa nền tảng (Cross-platform):** Toàn bộ tính năng tuyển dụng và tìm việc được đồng bộ thời gian thực giữa Web và Mobile.
-2. **AI CV Generator:** Tự động tạo và tối ưu hóa CV cho người khuyết tật dựa trên dữ liệu đầu vào.
-3. **AI Recommendation:** Gợi ý việc làm sát với năng lực ứng viên và yêu cầu của nhà tuyển dụng.
-4. **Voice Assistant (Mobile):** Trợ lý ảo nhận diện và tương tác bằng giọng nói, hỗ trợ tối đa cho người khiếm thị.
+- Đăng ký, OTP, đăng nhập email hoặc Google.
+- Quản lý hồ sơ và loại trợ năng.
+- Tìm kiếm, lọc và ứng tuyển công việc.
+- Tạo CV và cover letter bằng AI.
+- Nộp CV PDF/TXT và nhận điểm tương thích ATS.
+- Viết, lưu nháp và đăng câu chuyện truyền cảm hứng.
 
-## 📂 Cấu trúc Repository (Monorepo Architecture)
+### Nhà tuyển dụng
 
-Dự án được chia thành các dịch vụ độc lập:
-job-matching-system/
-├── backend-core/ # NestJS RESTful API & PostgreSQL
-├── ai-service/ # Python Microservice
-├── web-portal/ # Next.js Frontend
-├── mobile-app/ # React Native App
-└── docker-compose.yml # Local Environment Setup
+- Quản lý hồ sơ doanh nghiệp.
+- Đăng tin với thông tin trợ năng và nhóm khuyết tật phù hợp.
+- Xem CV, cover letter, match score.
+- Quản lý trạng thái đơn ứng tuyển.
 
-## 🛠️ Hướng dẫn khởi chạy môi trường Local (Local Development)
+### Quản trị viên
 
-Yêu cầu hệ thống: Có cài đặt Docker Desktop.
+- Dashboard thống kê.
+- Quản lý ứng viên, doanh nghiệp, công việc và đơn ứng tuyển.
 
-Bước 1: Clone dự án về máy
+### Trợ năng web
 
-git clone [https://github.com/PL21zzz/job-matching-system.git](https://github.com/PL21zzz/job-matching-system.git)
-cd job-matching-system
+- Điều hướng bàn phím và skip-link.
+- Tăng/giảm cỡ chữ.
+- Chế độ tương phản cao.
+- Đọc nội dung trang hoặc đoạn văn bản được chọn bằng Web Speech API.
+- Hỗ trợ `prefers-reduced-motion`.
+- Giao diện responsive cho desktop, tablet và mobile.
 
-Bước 2: Khởi chạy Cơ sở dữ liệu bằng Docker
+## Chạy local
 
-docker-compose up -d
+Yêu cầu: Node.js 22+, Docker Desktop.
 
-## 🗺️ Sơ Đồ Kiến Trúc Hệ Thống (System Architecture)
+```bash
+docker compose up -d
 
-Hệ thống được thiết kế theo luồng Microservices, tách biệt hoàn toàn giữa Core Logic và AI Processing để đảm bảo hiệu năng tối đa.
+cd backend
+npm install
+npx prisma migrate dev
+npm run start:dev
 
-```mermaid
-graph TD
-    %% Định nghĩa các Client
-    subgraph Client_Layer ["📱 Tầng Giao Diện Người Dùng (Client Layer)"]
-        Web["Web Portal<br/>(Next.js)"]
-        Mobile["Mobile App<br/>(React Native)"]
-        Voice["Voice Assistant<br/>(Speech-to-Text)"]
-        Mobile --- Voice
-    end
-
-    %% Định nghĩa Core Backend
-    subgraph Core_Layer ["⚙️ Tầng Xử Lý Trung Tâm (API Gateway & Logic)"]
-        NestJS["NestJS Server<br/>(RESTful API & Auth)"]
-    end
-
-    %% Định nghĩa AI Service
-    subgraph AI_Layer ["🧠 Tầng Trí Tuệ Nhân Tạo (AI Microservice)"]
-        Python["Python Server<br/>(FastAPI)"]
-        LLM["Mô Hình Ngôn Ngữ<br/>(LLM API)"]
-        Python -- Phân tích & Sinh CV --> LLM
-    end
-
-    %% Định nghĩa Database
-    subgraph Data_Layer ["🗄️ Tầng Lưu Trữ (Data Layer)"]
-        DB[("PostgreSQL<br/>(Database)")]
-    end
-
-    %% Mũi tên chỉ luồng dữ liệu
-    Web -- Gọi API --> NestJS
-    Mobile -- Gọi API --> NestJS
-
-    NestJS -- Request (JSON) --> Python
-    Python -- Response (AI Data) --> NestJS
-
-    NestJS -- Đọc / Ghi Dữ Liệu --> DB
-
-    %% Gắn màu sắc (Styling) cho đẹp
-    classDef client fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
-    classDef core fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
-    classDef ai fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
-    classDef db fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
-
-    class Web,Mobile,Voice client;
-    class NestJS core;
-    class Python,LLM ai;
-    class DB db;
+cd ../frontend
+npm install
+npm run dev
 ```
+
+- Backend: `http://localhost:3000`
+- Frontend: `http://localhost:3001`
+- pgAdmin: `http://localhost:5050`
+
+## Biến môi trường backend
+
+```env
+DATABASE_URL=
+JWT_SECRET=
+JWT_REFRESH_SECRET=
+FRONTEND_URL=http://localhost:3001
+FRONTEND_URLS=http://localhost:3001
+COOKIE_SAME_SITE=lax
+MAIL_HOST=
+MAIL_PORT=587
+MAIL_USER=
+MAIL_PASS=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=
+GEMINI_API_KEY=
+FPT_API_KEY=
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+# Mặc định để trống hoặc local. Chỉ đặt openai khi tài khoản có quota.
+MATCH_SCORE_PROVIDER=local
+OPENAI_API_KEY=
+```
+
+Frontend:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
+## Match score
+
+Mặc định hệ thống đọc text thật từ PDF/TXT và chấm theo mức độ trùng khớp từ khóa, độ đầy đủ của CV và cover letter. Luồng ứng tuyển không bị gián đoạn khi OpenAI hết quota.
+
+Nếu muốn thử lại OpenAI:
+
+```env
+MATCH_SCORE_PROVIDER=openai
+```
+
+Khi OpenAI lỗi, hệ thống giữ điểm ATS nội bộ thay vì gán một điểm mặc định giả.
+
+## Kiểm tra
+
+```bash
+cd backend
+npm run build
+npm test
+
+cd ../frontend
+npm run build
+npm run lint
+```
+
+## Lưu ý bảo mật
+
+- Token mới được lưu trong cookie `HttpOnly`; Bearer token chỉ còn để tương thích phiên cũ.
+- Production phải giới hạn `FRONTEND_URLS`.
+- Không commit API key vào source code.
+- FPT API key từng xuất hiện trong mã nguồn cần được thu hồi và tạo key mới trên FPT Console.

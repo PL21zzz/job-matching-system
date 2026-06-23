@@ -9,13 +9,22 @@ import { v2 as cloudinary } from 'cloudinary';
 import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApplyJobDto } from './dto/apply-job.dto';
+import {
+  extractAccessibilityTags,
+  SUPPORTED_DISABILITY_TYPE_IDS,
+} from './disability-support';
 import { CreateJobDto } from './dto/create-job.dto';
+import { InterviewPracticeDto } from './dto/interview-practice.dto';
+import { MatchScoreService } from './match-score.service';
 
 @Injectable()
 export class JobsService {
   private ai: GoogleGenerativeAI;
-  private openai: OpenAI;
-  constructor(private readonly prisma: PrismaService) {
+  private openai?: OpenAI;
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly matchScoreService: MatchScoreService,
+  ) {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,
@@ -29,9 +38,12 @@ export class JobsService {
       );
     }
     this.ai = new GoogleGenerativeAI(apiKey);
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    if (
+      process.env.MATCH_SCORE_PROVIDER === 'openai' &&
+      process.env.OPENAI_API_KEY
+    ) {
+      this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    }
   }
 
   async findAllCategories() {
@@ -64,6 +76,31 @@ export class JobsService {
     }
 
     const { suitableDisabilityIds, ...jobData } = dto;
+    const disabilityIds = Array.isArray(suitableDisabilityIds)
+      ? suitableDisabilityIds.map((id) => Number(id))
+      : [];
+
+    if (!disabilityIds.length) {
+      throw new BadRequestException(
+        'Vui lòng chọn ít nhất 1 trong 4 nhóm khuyết tật hệ thống đang hỗ trợ.',
+      );
+    }
+
+    if (
+      disabilityIds.some(
+        (id) => !(SUPPORTED_DISABILITY_TYPE_IDS as readonly number[]).includes(id),
+      )
+    ) {
+      throw new BadRequestException(
+        'Vị trí chỉ được cấu hình cho 4 nhóm khuyết tật: vận động, khiếm thị, khiếm thính và câm.',
+      );
+    }
+
+    if (!extractAccessibilityTags(jobData.accessibilityFeatures).length) {
+      throw new BadRequestException(
+        'Vui lòng chọn ít nhất 1 accommodation trợ năng để AI và bộ lọc sử dụng.',
+      );
+    }
 
     return await this.prisma.job.create({
       data: {
@@ -81,9 +118,7 @@ export class JobsService {
         status: 'OPEN',
 
         suitableDisabilities: {
-          connect: Array.isArray(suitableDisabilityIds)
-            ? suitableDisabilityIds.map((id: number) => ({ id: Number(id) }))
-            : [],
+          connect: disabilityIds.map((id: number) => ({ id })),
         },
       },
       include: {
@@ -170,6 +205,11 @@ export class JobsService {
 
   async findAllDisabilityTypes() {
     return await this.prisma.disabilityType.findMany({
+      where: {
+        id: {
+          in: [...SUPPORTED_DISABILITY_TYPE_IDS],
+        },
+      },
       orderBy: {
         id: 'asc',
       },
@@ -226,6 +266,138 @@ export class JobsService {
     } catch (error: any) {
       throw new InternalServerErrorException(
         `Lỗi hệ thống AI sinh Cover Letter: ${error.message || error}`,
+      );
+    }
+  }
+
+  async practiceInterview(
+    userId: string,
+    jobId: string,
+    dto: InterviewPracticeDto,
+  ) {
+    const job = await this.prisma.job.findUnique({
+      where: { id: jobId },
+      include: {
+        employer: {
+          select: {
+            companyName: true,
+            description: true,
+            accessibilityFeatures: true,
+          },
+        },
+        category: {
+          select: {
+            name: true,
+          },
+        },
+        suitableDisabilities: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!job) {
+      throw new NotFoundException('Không tìm thấy công việc yêu cầu.');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        candidateProfile: {
+          include: {
+            disabilityType: true,
+          },
+        },
+      },
+    });
+
+    if (!user || !user.candidateProfile) {
+      throw new BadRequestException(
+        'Chỉ ứng viên đã có hồ sơ mới có thể tập phỏng vấn với AI.',
+      );
+    }
+
+    const profileSummary = [
+      `Họ tên: ${user.fullName}`,
+      user.candidateProfile.disabilityType?.name
+        ? `Nhóm hỗ trợ: ${user.candidateProfile.disabilityType.name}`
+        : '',
+      user.candidateProfile.address
+        ? `Địa chỉ: ${user.candidateProfile.address}`
+        : '',
+      user.candidateProfile.phone ? `Điện thoại: ${user.candidateProfile.phone}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const historyText = (dto.history || [])
+      .map((item) => `${item.role}: ${item.content}`)
+      .join('\n');
+
+    const candidateMessage = dto.message?.trim();
+    const prompt = `
+Bạn là một nhà tuyển dụng mô phỏng đang phỏng vấn ứng viên cho công việc sau.
+
+[CÔNG VIỆC]
+- Vị trí: ${job.title}
+- Doanh nghiệp: ${job.employer.companyName}
+- Ngành: ${job.category.name}
+- Địa điểm: ${job.location}
+- Hình thức: ${job.type}
+- Mô tả: ${job.description}
+- Yêu cầu: ${job.requirements}
+- Trợ năng: ${job.accessibilityFeatures || 'Chưa có mô tả'}
+- Nhóm phù hợp: ${job.suitableDisabilities.map((item) => item.name).join(', ') || 'Chưa khai báo'}
+
+[THÔNG TIN ỨNG VIÊN]
+${profileSummary}
+
+[LỊCH SỬ]
+${historyText || 'Chưa có'}
+
+[TIN NHẮN MỚI NHẤT CỦA ỨNG VIÊN]
+${candidateMessage || 'Ứng viên vừa bắt đầu buổi tập phỏng vấn.'}
+
+Yêu cầu:
+- Trả lời bằng tiếng Việt, có dấu, tự nhiên và chuyên nghiệp.
+- Nếu đây là lượt đầu tiên, hãy giới thiệu ngắn và hỏi câu phỏng vấn đầu tiên phù hợp với job.
+- Nếu ứng viên vừa trả lời, hãy phản hồi ngắn về điểm mạnh/điểm cần cải thiện trong câu trả lời đó, rồi hỏi tiếp 1 câu khác.
+- Ưu tiên câu hỏi bám sát job và hồ sơ ứng viên.
+- Trả về JSON thuần với định dạng:
+{
+  "reply": "nội dung trả lời của AI",
+  "focusPoints": ["ý 1", "ý 2", "ý 3"]
+}
+`;
+
+    try {
+      const model = this.ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const result = await model.generateContent(prompt);
+      const rawText = result.response.text().trim();
+
+      try {
+        const parsed = JSON.parse(rawText);
+        return {
+          reply: parsed.reply || 'Chúng ta bắt đầu buổi tập phỏng vấn nhé.',
+          focusPoints: Array.isArray(parsed.focusPoints)
+            ? parsed.focusPoints.slice(0, 3)
+            : [],
+        };
+      } catch {
+        return {
+          reply: rawText || 'Chúng ta bắt đầu buổi tập phỏng vấn nhé.',
+          focusPoints: [
+            'Trả lời rõ ví dụ thực tế',
+            'Nêu kỹ năng liên quan trực tiếp đến vị trí',
+            'Giữ câu trả lời ngắn gọn, tự tin',
+          ],
+        };
+      }
+    } catch (error: any) {
+      throw new InternalServerErrorException(
+        `Lỗi AI phỏng vấn thử: ${error.message || error}`,
       );
     }
   }
@@ -289,14 +461,16 @@ export class JobsService {
     }
 
     // Trích xuất chữ thô ban đầu từ buffer file (Loại bỏ các ký tự nhị phân lỗi)
-    const extractedCvText = file.buffer
-      .toString('utf8')
-      .replace(/[^\x20-\x7E\x0A\x0D]/g, ' ');
+    const extractedCvText = await this.matchScoreService.extractText(file);
 
     // 5. LUỒNG CHẤM ĐIỂM THÔNG MINH BẰNG OPENAI GPT-4O-MINI
-    let computedScore = 70; // Điểm mặc định phòng hờ lỗi mạng
+    let computedScore = this.matchScoreService.calculate(
+      `${job.title}\n${job.description}\n${job.requirements}`,
+      extractedCvText,
+      dto.coverLetter,
+    ).score;
 
-    try {
+    if (process.env.MATCH_SCORE_PROVIDER === 'openai' && this.openai) try {
       console.log('=== ĐANG GỬI DỮ LIỆU SANG OPENAI GPT CHẤM ĐIỂM... ===');
 
       const matchPrompt = `
@@ -354,6 +528,10 @@ export class JobsService {
         cvTextRaw: extractedCvText.substring(0, 3000), // Lưu trữ text sạch phục vụ tìm kiếm từ khóa sau này
         status: 'APPLIED',
         matchScore: computedScore,
+        matchScoreSource:
+          process.env.MATCH_SCORE_PROVIDER === 'openai'
+            ? 'OPENAI_WITH_LOCAL_FALLBACK'
+            : 'LOCAL_ATS_V1',
       },
     });
   }
@@ -405,7 +583,11 @@ export class JobsService {
     });
   }
 
-  async updateApplicationStatus(applicationId: string, status: string) {
+  async updateApplicationStatus(
+    userId: string,
+    applicationId: string,
+    status: string,
+  ) {
     const validStatuses = [
       'APPLIED',
       'REVIEWING',
@@ -419,10 +601,17 @@ export class JobsService {
 
     const application = await this.prisma.application.findUnique({
       where: { id: applicationId },
+      include: { job: { include: { employer: true } } },
     });
 
     if (!application) {
       throw new NotFoundException('Không tìm thấy đơn ứng tuyển yêu cầu.');
+    }
+
+    if (application.job.employer.userId !== userId) {
+      throw new BadRequestException(
+        'Bạn không có quyền cập nhật đơn ứng tuyển của doanh nghiệp khác.',
+      );
     }
 
     return await this.prisma.application.update({

@@ -1,0 +1,26 @@
+@startuml
+title AI Interview Practice Activity Diagram
+start
+:Candidate opens a job detail page;
+:Click "Practice Interview with AI";
+:System loads selected job\nand candidate profile context;
+:AI generates the first\ninterview question;
+:Display question to candidate;
+
+repeat
+  :Candidate types response;
+  :Frontend sends message history,\njob context, and profile summary;
+  :Backend forwards prompt to AI model;
+
+  if (AI returns valid response?) then (Yes)
+    :Show feedback on the candidate answer;
+    :Display next interview question;
+  else (No)
+    :Show fallback message\nand allow retry;
+  endif
+
+repeat while (Continue practice?) is (Yes)
+
+:End interview practice session;
+stop
+@enduml

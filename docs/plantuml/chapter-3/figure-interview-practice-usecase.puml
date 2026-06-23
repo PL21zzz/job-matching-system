@@ -1,0 +1,28 @@
+@startuml
+title AI Interview Practice Use Case Diagram
+left to right direction
+skinparam shadowing false
+
+actor Candidate
+actor "System AI\n(Gemini)" as AI
+
+rectangle "AI Interview Practice Module" {
+  usecase "Select Target Job" as I1
+  usecase "Start Interview Practice" as I2
+  usecase "Send Candidate Response" as I3
+  usecase "Receive AI Feedback" as I4
+  usecase "Get Next Interview Question" as I5
+  usecase "Generate Interview\nQuestion and Guidance" as I6
+}
+
+Candidate --> I1
+Candidate --> I2
+Candidate --> I3
+Candidate --> I4
+Candidate --> I5
+
+I2 --> I6
+I3 --> I6
+AI --> I6
+
+@enduml

@@ -1,5 +1,6 @@
 "use client";
 
+import { getAccessibilityTags } from "@/src/lib/job-accessibility";
 import { ChevronDown, Loader2, MapPin, Sparkles, Users } from "lucide-react";
 import Link from "next/link";
 
@@ -45,99 +46,100 @@ const JobList = ({ jobs, loading }: JobListProps) => {
         </button>
       </div>
 
-      {jobs.map((job) => (
-        <div
-          key={job.id}
-          className="group p-8 rounded-4xl bg-surface dark:bg-surface border border-slate-100 dark:border-white/5 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 shadow-sm"
-        >
-          <div className="flex flex-col md:flex-row gap-8">
-            <div className="w-20 h-20 shrink-0 rounded-2xl bg-slate-50 dark:bg-secondary flex items-center justify-center border border-slate-100 dark:border-white/10 overflow-hidden text-primary font-black text-xl select-none">
-              {job.employer?.logoUrl ? (
-                <img
-                  src={job.employer.logoUrl}
-                  alt={job.employer?.companyName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                job.employer?.companyName?.substring(0, 2).toUpperCase() ||
-                "N/A"
-              )}
-            </div>
+      {jobs.map((job) => {
+        const accessibilityTags = getAccessibilityTags(job.accessibilityFeatures);
 
-            <div className="flex-1">
-              <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
-                <div>
-                  <Link href={`/jobs/${job.id}`}>
-                    <h2 className="text-2xl font-black group-hover:text-primary transition-colors cursor-pointer leading-tight mb-2 text-slate-900 dark:text-white uppercase tracking-tight">
-                      {job.title}
-                    </h2>
-                  </Link>
-                  <div className="flex flex-wrap items-center gap-4 text-sm font-bold text-slate-500">
-                    <span className="flex items-center gap-1.5 text-primary">
-                      <Users size={16} />{" "}
-                      {job.employer?.companyName || "Doanh nghiệp ẩn danh"}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <MapPin size={16} /> {job.location}
-                    </span>
-                  </div>
-                </div>
-                <div className="px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 flex items-center gap-2 select-none">
-                  <Sparkles size={14} className="text-primary" />
-                  <span className="text-[10px] font-black text-primary uppercase tracking-widest">
-                    AI Match
-                  </span>
-                </div>
-              </div>
-
-              {/* Tag loại khuyết tật đối tượng */}
-              {job?.suitableDisabilities &&
-                job.suitableDisabilities.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3 select-none">
-                    {job.suitableDisabilities.map((disability: any) => (
-                      <span
-                        key={disability.id}
-                        className="px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/30 text-[11px] font-bold text-emerald-600 dark:text-emerald-400"
-                      >
-                        🤝 {disability.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-              {/* Tag trợ năng */}
-              <div className="flex flex-wrap gap-2 mb-8 select-none">
-                {job.accessibilityFeatures ? (
-                  job.accessibilityFeatures.split(", ").map((tag: string) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/30 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 group-hover:border-primary/30 transition-all"
-                    >
-                      ♿ {tag}
-                    </span>
-                  ))
+        return (
+          <div
+            key={job.id}
+            className="group p-8 rounded-4xl bg-surface dark:bg-surface border border-slate-100 dark:border-white/5 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 shadow-sm"
+          >
+            <div className="flex flex-col md:flex-row gap-8">
+              <div className="w-20 h-20 shrink-0 rounded-2xl bg-slate-50 dark:bg-secondary flex items-center justify-center border border-slate-100 dark:border-white/10 overflow-hidden text-primary font-black text-xl select-none">
+                {job.employer?.logoUrl ? (
+                  <img
+                    src={job.employer.logoUrl}
+                    alt={job.employer?.companyName}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <span className="text-xs text-slate-400 italic">
-                    Cơ cấu hỗ trợ phổ thông
-                  </span>
+                  job.employer?.companyName?.substring(0, 2).toUpperCase() ||
+                  "N/A"
                 )}
               </div>
 
-              {/* Lương & Xem chi tiết */}
-              <div className="flex items-center justify-between pt-6 border-t border-slate-100 dark:border-white/5">
-                <p className="text-2xl font-black text-primary italic select-none">
-                  {job.salaryText || "Thỏa thuận"}
-                </p>
-                <Link href={`/jobs/${job.id}`}>
-                  <button className="px-8 py-3 rounded-xl bg-primary text-white font-extrabold text-sm hover:scale-105 transition-all shadow-lg shadow-primary/20 active:scale-95 cursor-pointer">
-                    Xem Chi Tiết
-                  </button>
-                </Link>
+              <div className="flex-1">
+                <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
+                  <div>
+                    <Link href={`/jobs/${job.id}`}>
+                      <h2 className="text-2xl font-black group-hover:text-primary transition-colors cursor-pointer leading-tight mb-2 text-slate-900 dark:text-white uppercase tracking-tight">
+                        {job.title}
+                      </h2>
+                    </Link>
+                    <div className="flex flex-wrap items-center gap-4 text-sm font-bold text-slate-500">
+                      <span className="flex items-center gap-1.5 text-primary">
+                        <Users size={16} />{" "}
+                        {job.employer?.companyName || "Doanh nghiệp ẩn danh"}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <MapPin size={16} /> {job.location}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 flex items-center gap-2 select-none">
+                    <Sparkles size={14} className="text-primary" />
+                    <span className="text-[10px] font-black text-primary uppercase tracking-widest">
+                      AI Match
+                    </span>
+                  </div>
+                </div>
+
+                {job?.suitableDisabilities &&
+                  job.suitableDisabilities.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3 select-none">
+                      {job.suitableDisabilities.map((disability: any) => (
+                        <span
+                          key={disability.id}
+                          className="px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/30 text-[11px] font-bold text-emerald-600 dark:text-emerald-400"
+                        >
+                          {disability.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                <div className="flex flex-wrap gap-2 mb-8 select-none">
+                  {accessibilityTags.length > 0 ? (
+                    accessibilityTags.map((tag: string) => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/30 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 group-hover:border-primary/30 transition-all"
+                      >
+                        {tag}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-400 italic">
+                      Cơ cấu hỗ trợ phổ thông
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-6 border-t border-slate-100 dark:border-white/5">
+                  <p className="text-2xl font-black text-primary italic select-none">
+                    {job.salaryText || "Thỏa thuận"}
+                  </p>
+                  <Link href={`/jobs/${job.id}`}>
+                    <button className="px-8 py-3 rounded-xl bg-primary text-white font-extrabold text-sm hover:scale-105 transition-all shadow-lg shadow-primary/20 active:scale-95 cursor-pointer">
+                      Xem chi tiết
+                    </button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

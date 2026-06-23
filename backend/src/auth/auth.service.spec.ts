@@ -209,6 +209,7 @@ describe('AuthService', () => {
       expect(mockPrisma.user.create).toHaveBeenCalled();
       expect(result).toEqual({
         access_token: 'mock-token',
+        refresh_token: 'mock-token',
         isNewUser: true,
       });
     });

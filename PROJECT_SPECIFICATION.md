@@ -1,78 +1,87 @@
-# 📋 ĐẶC TẢ CHI TIẾT DỰ ÁN (PROJECT SPECIFICATION)
+# Đặc tả dự án Equitas AI
 
-**Tên dự án:** Hệ thống hỗ trợ tìm kiếm việc làm cho người khuyết tật ứng dụng trí tuệ nhân tạo (AI-Powered Job Matching System).
+## 1. Mục tiêu
 
----
+Xây dựng một nền tảng tuyển dụng web có khả năng tiếp cận cao, giúp người khuyết tật tìm công việc phù hợp và giúp doanh nghiệp xây dựng quy trình tuyển dụng hòa nhập.
 
-## 1. Mục Tiêu Dự Án (Project Goals)
+## 2. Phạm vi nền tảng
 
-- Xây dựng một nền tảng bình đẳng, xóa bỏ rào cản tìm việc cho 3 nhóm người khuyết tật (Vận động, Nghe/Nói, Nhìn).
-- Cung cấp công cụ chuyên biệt để các doanh nghiệp dễ dàng tiếp cận và tuyển dụng nguồn lao động đặc thù.
-- Ứng dụng AI để tự động hóa các khâu khó khăn nhất: Viết CV, lọc hồ sơ và thao tác trên thiết bị (dành cho người khiếm thị).
+Sản phẩm triển khai trên web responsive. Dự án không phát triển ứng dụng mobile riêng; các chức năng dành cho người khiếm thị được tích hợp trực tiếp vào website.
 
-## 2. Đối Tượng Người Dùng (Target Audience)
+## 3. Người dùng
 
-1. **Ứng viên (Candidate):** Người khuyết tật đang có nhu cầu tìm kiếm việc làm phù hợp với năng lực và điều kiện sức khỏe.
-2. **Nhà tuyển dụng (Employer):** Các doanh nghiệp, tổ chức có nhu cầu tuyển dụng người khuyết tật hoặc có môi trường làm việc thân thiện với người khuyết tật.
-3. **Quản trị viên (Admin):** Người giám sát hệ thống, kiểm duyệt nội dung và hỗ trợ người dùng.
+- Candidate: ứng viên tìm việc.
+- Employer: nhà tuyển dụng.
+- Admin: quản trị hệ thống.
 
----
+## 4. Nghiệp vụ chính
 
-## 3. Danh Sách Tính Năng Chi Tiết (Features Breakdown)
+### Candidate
 
-### 3.1. Phân hệ Ứng viên (Web & Mobile)
+- Đăng ký, OTP, Google OAuth.
+- Hoàn thiện hồ sơ trợ năng.
+- Tìm kiếm và lọc công việc.
+- Tạo CV và cover letter bằng Gemini.
+- Nộp CV PDF/TXT.
+- Nhận match score từ bộ ATS nội bộ.
+- Viết và quản lý câu chuyện truyền cảm hứng.
 
-- **Quản lý Hồ sơ Cá nhân:** Khai báo thông tin, kỹ năng và lựa chọn nhóm khiếm khuyết (để hệ thống tối ưu hóa hiển thị và gợi ý).
-- **AI CV Generator (Tạo CV tự động):** Ứng viên nhập kỹ năng cốt lõi, AI sẽ tự động phân tích và sinh ra bản CV hoàn chỉnh, nhấn mạnh vào thế mạnh chuyên môn thay vì khiếm khuyết.
-- **Tìm kiếm & Lọc việc làm:** Lọc công việc theo mức độ phù hợp với tình trạng sức khỏe (VD: Việc làm tại nhà, văn phòng có lối đi xe lăn).
-- **Voice Assistant (Độc quyền trên Mobile):** Trợ lý giọng nói hỗ trợ người khiếm thị. Chuyển đổi giọng nói thành văn bản (STT) để tìm việc và đọc kết quả bằng giọng nói (TTS).
-- **Theo dõi Ứng tuyển:** Cập nhật trạng thái hồ sơ (Đã xem, Chấp nhận phỏng vấn, Từ chối).
+### Employer
 
-### 3.2. Phân hệ Nhà Tuyển Dụng (Web & Mobile)
+- Hoàn thiện hồ sơ doanh nghiệp.
+- Đăng công việc và khai báo điều kiện tiếp cận.
+- Xem ứng viên thuộc công việc của doanh nghiệp.
+- Cập nhật trạng thái tuyển dụng.
 
-- **Quản lý Hồ sơ Doanh nghiệp:** Thông tin công ty, hình ảnh môi trường làm việc, các tiện ích hỗ trợ người khuyết tật.
-- **Đăng Tin Tuyển Dụng:** Cho phép gắn thẻ (tag) các yêu cầu đặc thù hoặc nhóm người khuyết tật phù hợp với vị trí công việc.
-- **AI Recommendation (Gợi ý Ứng viên):** Hệ thống tự động quét và đề xuất danh sách ứng viên có bộ kỹ năng khớp nhất với yêu cầu công việc.
-- **Quản lý Quy trình Tuyển dụng:** Xem CV, đánh giá, gửi lời mời phỏng vấn hoặc phản hồi trực tiếp trên nền tảng.
+### Admin
 
-### 3.3. Phân hệ Quản trị viên (Web Portal)
+- Quản lý tài khoản.
+- Quản lý công việc và đơn ứng tuyển.
+- Theo dõi số liệu tổng quan.
 
-- **Kiểm duyệt Nội dung:** Duyệt tin đăng tuyển dụng và tài khoản doanh nghiệp để tránh lừa đảo.
-- **Quản lý Người dùng:** Khóa/Mở khóa tài khoản có hành vi vi phạm.
-- **Báo cáo & Thống kê:** Bảng điều khiển (Dashboard) thống kê số lượng tin đăng, số lượt ứng tuyển thành công, biểu đồ tăng trưởng.
+## 5. Trợ năng
 
----
+- Semantic HTML và tiêu đề trang rõ ràng.
+- Điều hướng hoàn toàn bằng bàn phím.
+- Focus indicator dễ nhận biết.
+- Skip-link.
+- Tùy chỉnh cỡ chữ và tương phản.
+- Đọc nội dung bằng giọng nói trên trình duyệt.
+- Tôn trọng thiết lập giảm chuyển động.
+- Responsive từ màn hình điện thoại đến desktop.
 
-## 4. Kết Quả Mong Đợi (Expected Outcomes)
+## 6. Kiến trúc
 
-- **Sản phẩm đầu ra:** Một hệ thống chạy thực tế, ổn định trên cả môi trường trình duyệt (Web) và điện thoại di động (App).
-- **Hiệu suất AI:** Mô hình LLM sinh CV đạt độ tự nhiên, logic và bám sát vào yêu cầu của thị trường lao động. Trợ lý giọng nói phản hồi chính xác lệnh của người dùng.
-- **Vận hành (DevOps):** Toàn bộ hệ thống được đóng gói bằng Docker và triển khai luồng CI/CD tự động lên máy chủ VPS.
+```text
+Next.js Web
+     |
+NestJS REST API
+     |
+PostgreSQL / Prisma
 
-## 5. Tiêu Chuẩn Kỹ Thuật (Technical Constraints)
+NestJS -> Gemini
+NestJS -> Cloudinary
+NestJS -> Email/FPT Voice
+```
 
-- **Bảo mật:** Mật khẩu được mã hóa, sử dụng JWT để xác thực phiên đăng nhập.
-- **Tối ưu hóa (SEO):** Các trang tin tuyển dụng trên Web Portal (Next.js) phải được lập chỉ mục tốt trên các công cụ tìm kiếm.
-- **Trải nghiệm người dùng (UX/UI):** Giao diện phải tuân thủ các tiêu chuẩn trợ năng (Accessibility - a11y), độ tương phản cao, hỗ trợ trình đọc màn hình.
+## 7. Match score
 
-## 6. Quy Trình Nghiệp Vụ Cơ Bản (User Flows)
+Match score mặc định chạy cục bộ:
 
-### 6.1. Luồng Ứng viên tìm việc (Candidate Flow)
+1. Trích xuất text thật từ CV PDF/TXT.
+2. Chuẩn hóa nội dung CV và JD.
+3. Lấy nhóm từ khóa quan trọng trong JD.
+4. Tính tỷ lệ khớp, độ đầy đủ CV và cover letter.
+5. Lưu điểm cùng nguồn `LOCAL_ATS_V1`.
 
-1. **Đăng nhập/Đăng ký:** Truy cập hệ thống (Web/Mobile), tạo tài khoản và xác thực.
-2. **Thiết lập Profile:** Khai báo thông tin cá nhân, chọn nhóm khiếm khuyết (Vận động/Nghe/Nói/Nhìn) để hệ thống tối ưu giao diện và gợi ý.
-3. **Tạo CV bằng AI:** Nhập danh sách kỹ năng, kinh nghiệm. AI tự động sinh ra bản CV hoàn chỉnh và lưu vào hồ sơ.
-4. **Tìm kiếm & Ứng tuyển:**
-   - Sử dụng bộ lọc hoặc nhận danh sách công việc do AI gợi ý.
-   - _(Trên Mobile)_: Sử dụng Voice Assistant để tìm việc bằng giọng nói.
-   - Chọn công việc phù hợp và bấm "Nộp CV".
-5. **Theo dõi trạng thái:** Nhận thông báo khi Nhà tuyển dụng xem CV hoặc mời phỏng vấn.
+OpenAI là tùy chọn, không phải phụ thuộc bắt buộc.
 
-### 6.2. Luồng Nhà tuyển dụng (Employer Flow)
+## 8. Bảo mật
 
-1. **Xác thực Doanh nghiệp:** Đăng ký tài khoản, cập nhật hồ sơ công ty và chờ Admin kiểm duyệt.
-2. **Đăng tin tuyển dụng:** Điền thông tin job, yêu cầu kỹ năng và gắn tag các nhóm khuyết tật có thể đáp ứng công việc.
-3. **Quản lý Ứng viên:**
-   - Nhận hồ sơ ứng tuyển từ hệ thống.
-   - Sử dụng hệ thống AI Recommendation để chủ động tìm kiếm các hồ sơ phù hợp đang có sẵn trên nền tảng.
-4. **Tương tác:** Đánh giá hồ sơ, đổi trạng thái (Từ chối/Phỏng vấn) để hệ thống tự động báo cho ứng viên.
+- Mật khẩu băm bằng bcrypt.
+- JWT access/refresh token trong cookie `HttpOnly`.
+- Refresh token rotation.
+- Role guard cho Admin/Employer.
+- Kiểm tra quyền sở hữu trước khi thay đổi đơn ứng tuyển hoặc bài viết.
+- CORS giới hạn theo danh sách frontend domain.
+- API key chỉ lấy từ biến môi trường.

@@ -35,6 +35,35 @@ export class UsersService {
     return user;
   }
 
+  async completeOnboarding(userId: string, roleName: 'Candidate' | 'Employer') {
+    const role = await this.prisma.role.findUnique({
+      where: { name: roleName },
+    });
+    if (!role) throw new BadRequestException('Vai trò không hợp lệ.');
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { roleId: role.id },
+      });
+      if (roleName === 'Candidate') {
+        await tx.candidateProfile.upsert({
+          where: { userId },
+          update: {},
+          create: { userId },
+        });
+      } else {
+        await tx.employerProfile.upsert({
+          where: { userId },
+          update: {},
+          create: { userId },
+        });
+      }
+    });
+
+    return this.getProfileMe(userId, roleName);
+  }
+
   async getProfileForCv(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

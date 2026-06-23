@@ -6,14 +6,17 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { GenerateCvAiDto } from './dto/generate-cv-ai.dto';
 import { ResumesService } from './resumes.service';
 
 @Controller('resumes')
 export class ResumesController {
   constructor(private readonly resumesService: ResumesService) {}
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Candidate')
   @Post('generate-ai')
   async generateCvWithAi(
     @Req() req: any,

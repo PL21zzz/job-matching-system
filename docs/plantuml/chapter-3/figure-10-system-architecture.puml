@@ -1,0 +1,44 @@
+@startuml
+title Figure 10. System Architecture Overview
+top to bottom direction
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+rectangle "Client Tier (Frontend Browser)" as client {
+  component "Next.js Web Application" as nextjs
+  rectangle "Accessibility Layers" as access {
+    component "GUI\n(Tailwind CSS)" as gui
+    component "Voice UI\n(Web Speech API)" as vui
+  }
+}
+
+cloud "Network Gateway" as gateway {
+  component "HTTPS + Nginx Reverse Proxy" as nginx
+}
+
+rectangle "Server Tier (Backend Application)" as server {
+  component "NestJS API Core" as nest
+  component "Prisma ORM Layer" as prisma
+}
+
+database "PostgreSQL Database" as db
+
+cloud "External Services" as ext {
+  component "Google Gemini API" as gemini
+  component "Cloudinary" as cloudinary
+  component "FPT AI TTS / Browser TTS" as tts
+}
+
+nextjs --> gui : renders pages
+nextjs --> vui : captures / plays voice
+gui --> nginx : REST API requests
+vui --> nginx : processed text streams
+nginx --> nest : routes web traffic
+nest --> prisma : data access
+prisma --> db : read / write SQL
+
+nest --> gemini : CV tailoring /\ncover letter /\ninterview practice /\nAI assistant
+nest --> cloudinary : upload CV files
+nest --> tts : speech output
+
+@enduml

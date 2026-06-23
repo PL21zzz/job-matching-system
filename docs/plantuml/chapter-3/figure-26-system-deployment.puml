@@ -1,0 +1,46 @@
+@startuml
+title Figure 26. System Deployment
+top to bottom direction
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+rectangle "User Access Platform" as client {
+  component "Web Application Browser\n(Next.js + TypeScript)" as browser
+}
+
+cloud "Public Internet\n(Traffic Ingress)" as internet
+
+node "Cloud Virtual Private Server\n(Ubuntu Server Host)" as vps {
+  node "Host Network Web Server" as host {
+    component "Nginx Reverse Proxy\n+ SSL Termination (:443)" as nginx
+  }
+
+  database "PostgreSQL DB Engine\n(Persistent Volume)" as db
+
+  frame "Docker Containerization Engine\n(bridge: equitas-network)" as docker {
+    node "Frontend Container Platform" as frontendNode {
+      component "Next.js Production Server\n(Internal Port 3000)" as frontend
+    }
+
+    node "Backend API Container Platform" as backendNode {
+      component "NestJS Runtime Application\n(Internal Port 3001)" as backend
+    }
+  }
+}
+
+cloud "Google AI Infrastructure" as aiCloud {
+  component "Google Gemini API\n(Generative AI Core Suite)" as gemini
+}
+
+browser --> internet : HTTPS traffic
+internet --> nginx : route domain requests
+nginx --> frontend : proxy pass :3000
+nginx --> backend : proxy pass :3001
+
+backend --> db : Prisma ORM access
+db --> backend : relational payload
+
+backend --> gemini : secure SDK calls\n(prompts / JSON)
+gemini --> backend : AI structured inference
+
+@enduml

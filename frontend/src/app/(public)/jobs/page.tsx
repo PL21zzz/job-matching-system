@@ -3,11 +3,14 @@
 import JobFilter from "@/src/components/sections/jobs/JobFilter";
 import JobList from "@/src/components/sections/jobs/JobList";
 import JobSearch from "@/src/components/sections/jobs/JobSearch";
+import { DISABILITY_FOCUS_OPTIONS } from "@/src/constants/jobs";
+import { getAccessibilityTags } from "@/src/lib/job-accessibility";
 import { jobService } from "@/src/services/jobService";
 import { useEffect, useState } from "react";
 
 export default function JobListingPage() {
   const [jobs, setJobs] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   const [filters, setFilters] = useState({
@@ -15,7 +18,15 @@ export default function JobListingPage() {
     location: "",
     categoryId: "",
     accessibility: "",
+    disabilityFocus: "",
   });
+
+  useEffect(() => {
+    jobService
+      .getCategories()
+      .then((data) => setCategories(Array.isArray(data) ? data : []))
+      .catch(() => setCategories([]));
+  }, []);
 
   const fetchJobs = async () => {
     try {
@@ -30,10 +41,33 @@ export default function JobListingPage() {
 
       if (filters.accessibility) {
         data = data.filter((job: any) =>
-          job.accessibilityFeatures
-            ?.toLowerCase()
-            .includes(filters.accessibility.toLowerCase()),
+          getAccessibilityTags(job.accessibilityFeatures).some((tag) =>
+            tag.toLowerCase().includes(filters.accessibility.toLowerCase()),
+          ),
         );
+      }
+
+      if (filters.disabilityFocus) {
+        const focus = DISABILITY_FOCUS_OPTIONS.find(
+          (option) => option.label === filters.disabilityFocus,
+        );
+
+        if (focus) {
+          data = data.filter((job: any) => {
+            const disabilityNames = Array.isArray(job.suitableDisabilities)
+              ? job.suitableDisabilities.map((item: any) => item.name).join(" ")
+              : "";
+            const accessibilityText = getAccessibilityTags(
+              job.accessibilityFeatures,
+            ).join(" ");
+            const haystack =
+              `${accessibilityText} ${disabilityNames}`.toLowerCase();
+
+            return focus.keywords.some((keyword) =>
+              haystack.includes(keyword.toLowerCase()),
+            );
+          });
+        }
       }
 
       setJobs(data);
@@ -50,14 +84,16 @@ export default function JobListingPage() {
 
   return (
     <div className="min-h-screen transition-colors duration-300 bg-white dark:bg-secondary text-slate-900 dark:text-white">
-      {/* 1. Thanh tìm kiếm phía trên */}
       <JobSearch filters={filters} setFilters={setFilters} />
 
-      {/* 2. Khu vực nội dung chính */}
       <main className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           <div className="lg:col-span-3">
-            <JobFilter filters={filters} setFilters={setFilters} />
+            <JobFilter
+              filters={filters}
+              setFilters={setFilters}
+              categories={categories}
+            />
           </div>
 
           <div className="lg:col-span-9">

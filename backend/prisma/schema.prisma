@@ -62,6 +62,7 @@ model CandidateProfile {
   disabilityTypeId Int?            @map("disability_type_id")
   disabilityType   DisabilityType? @relation(fields: [disabilityTypeId], references: [id])
   applications     Application[]
+  testimonials     Testimonial[]
 
   @@map("candidate_profiles")
 }
@@ -152,7 +153,8 @@ model Application {
 
   cvTextRaw    String?  @db.Text
 
-  matchScore Float? @map("match_score")
+  matchScore       Float?  @map("match_score")
+  matchScoreSource String? @map("match_score_source")
 
   appliedAt DateTime @default(now()) @map("applied_at")
 
@@ -162,14 +164,20 @@ model Application {
 // 10. Câu chuyện thành công (Testimonials)
 model Testimonial {
   id         String  @id @default(uuid())
+  title      String?
   content    String  @db.Text
   authorName String  @map("author_name")
   authorRole String  @map("author_role") // Ví dụ: Software Engineer, HR Manager
   avatarUrl  String? @map("avatar_url") // Link ảnh đại diện người chia sẻ
 
   isFeatured Boolean @default(false) @map("is_featured")
+  status     String  @default("PUBLISHED")
+
+  authorId String?            @map("author_id")
+  author   CandidateProfile? @relation(fields: [authorId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("testimonials")
 }

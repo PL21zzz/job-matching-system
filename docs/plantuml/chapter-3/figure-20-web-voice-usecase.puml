@@ -1,0 +1,24 @@
+@startuml
+title Figure 20. Web Voice Job Assistant Use Case Diagram
+left to right direction
+skinparam shadowing false
+
+actor "Candidate\n(Visually Impaired User)" as Candidate
+actor "System AI\n(Gemini / TTS)" as AI
+
+rectangle "Web Voice Job Assistant Module" {
+  usecase "Activate Microphone" as V1
+  usecase "Speak Job Search Request" as V2
+  usecase "Parse Voice Intent" as V3
+  usecase "Receive Suggested Jobs" as V4
+  usecase "Listen to Spoken Response" as V5
+}
+
+Candidate --> V1
+Candidate --> V2
+Candidate --> V4
+Candidate --> V5
+V2 --> V3
+AI --> V3
+
+@enduml

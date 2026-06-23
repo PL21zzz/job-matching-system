@@ -1,0 +1,20 @@
+@startuml
+title Figure 19. Assistive AI CV Builder Sequence Diagram
+actor "Next.js Client" as Client
+participant "NestJS API Gateway" as API
+participant "Google Gemini API" as Gemini
+database "PostgreSQL (Prisma)" as DB
+
+Client -> API : POST /resumes/generate-ai\n(jobId, templateId, profile data)
+API -> API : build structured prompt
+API -> Gemini : send prompt + API key
+Gemini --> API : optimized CV JSON / text
+API -> DB : persist cv_profile / generated data
+DB --> API : save success
+API --> Client : HTTP 200 OK + optimized data
+Client -> Client : render live preview
+Client -> Client : html2canvas snapshot
+Client -> Client : jsPDF export
+Client --> Client : download PDF
+
+@enduml

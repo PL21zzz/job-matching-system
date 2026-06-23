@@ -2,7 +2,7 @@
 
 import { TableLayout } from "@/src/components/sections/admin/TableLayout";
 import { adminService } from "@/src/services/adminService";
-import { jwtDecode } from "jwt-decode";
+import { authService } from "@/src/services/authService";
 import {
   Edit,
   Loader2,
@@ -41,37 +41,19 @@ export default function AdminDashboardPage() {
 
   // 🚀 BƯỚC 1: ROUTE GUARD CHẶN TUYỆT ĐỐI THEO TOKEN VÀ CHECK ROLE THẬT TỪ JWT DECODE
   useEffect(() => {
-    const token =
-      typeof window !== "undefined"
-        ? localStorage.getItem("access_token")
-        : null;
-
-    if (!token) {
-      toast.error("Vui lòng đăng nhập tài khoản Quản trị!");
-      router.push("/login");
-      return;
-    }
-
-    try {
-      // 🌟 GIẢI MÃ TOKEN ĐỂ KIỂM TRA QUYỀN THỜI GIAN THỰC (CHỐNG PHÁ HOẠI ROUTE)
-      const decodedUser: any = jwtDecode(token);
-      const roleName = decodedUser.role?.name || decodedUser.role;
-
-      if (roleName !== "Admin" && roleName !== "ADMIN") {
-        toast.error(
-          "Quyền truy cập bị từ chối! Vui lòng dùng tài khoản Admin.",
-        );
-        router.push("/");
-      } else {
-        // Đúng là cấu trúc quyền Admin tối cao -> Mở cổng giao diện và bốc DB
+    authService
+      .getProfileMe()
+      .then((user) => {
+        const roleName = user?.role?.name || user?.role;
+        if (roleName !== "Admin" && roleName !== "ADMIN") {
+          toast.error("Quyền truy cập bị từ chối.");
+          router.replace("/");
+          return;
+        }
         setIsCheckingAuth(false);
         loadAdminData();
-      }
-    } catch (e) {
-      console.error("Token dính lỗi cấu trúc giải mã:", e);
-      localStorage.removeItem("access_token");
-      router.push("/login");
-    }
+      })
+      .catch(() => router.replace("/login"));
   }, [router]);
 
   // ⚙️ BƯỚC 2: HÀM CÀO DỮ LIỆU ĐỒNG BỘ MẢNG PHẲNG TỪ BACKEND
@@ -216,7 +198,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="w-full min-h-screen bg-[#f8f9fa] font-sans text-slate-800">
       {/* HEADER TOPBAR */}
-      <nav className="w-full bg-[#343a40] text-white px-6 py-3 flex items-center justify-between shadow-xs select-none">
+      <nav className="w-full bg-[#343a40] text-white px-4 sm:px-6 py-3 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between shadow-xs select-none">
         {/* 🌟 FIX ĐIỀU HƯỚNG: Click vào chữ Equitas Central Admin tự động nhảy về trang chủ / */}
         <span
           onClick={() => router.push("/")}
@@ -224,7 +206,7 @@ export default function AdminDashboardPage() {
         >
           Equitas Central Admin
         </span>
-        <div className="flex items-center gap-2 bg-slate-700/50 rounded-md px-3 py-1.5 border border-slate-600 w-64">
+        <div className="flex items-center gap-2 bg-slate-700/50 rounded-md px-3 py-2 border border-slate-600 w-full sm:w-64">
           <Search size={14} className="text-slate-400" />
           <input
             type="text"
@@ -236,8 +218,8 @@ export default function AdminDashboardPage() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        <div className="flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+        <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
           <h1 className="text-3xl font-normal text-slate-900 tracking-tight">
             Dashboard Portal
           </h1>

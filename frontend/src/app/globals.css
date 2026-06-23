@@ -45,3 +45,59 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   transition: background-color 0.3s ease;
 }
+
+*:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -5rem;
+  z-index: 100;
+  border-radius: 0.75rem;
+  background: #020617;
+  color: white;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+.a11y-button {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 0.75rem;
+  padding: 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.high-contrast {
+  filter: contrast(1.25);
+}
+
+.high-contrast body {
+  --background: #000;
+  --foreground: #fff;
+  --color-secondary: #000;
+  --color-surface: #111;
+  --color-primary: #00ffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

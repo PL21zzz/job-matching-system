@@ -183,8 +183,8 @@ export default function CVEditorPage() {
   }
 
   return (
-    <div className="h-screen bg-slate-900 flex flex-col text-slate-100 overflow-hidden">
-      <header className="bg-slate-800/90 backdrop-blur-md border-b border-slate-700/60 px-6 py-3 flex justify-between items-center z-50 shrink-0 shadow-lg print:hidden">
+    <div className="min-h-screen lg:h-screen bg-slate-900 flex flex-col text-slate-100 lg:overflow-hidden">
+      <header className="bg-slate-800/90 backdrop-blur-md border-b border-slate-700/60 px-4 sm:px-6 py-3 flex flex-wrap gap-3 justify-between items-center z-50 shrink-0 shadow-lg print:hidden">
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push(`/resumes/templates?jobId=${jobId}`)}
@@ -197,7 +197,7 @@ export default function CVEditorPage() {
               <h2 className="text-xs font-black uppercase tracking-widest text-white">
                 Canva Studio Workspace
               </h2>
-              <span className="bg-blue-500/20 border border-blue-500/30 text-blue-400 text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+              <span className="hidden sm:flex bg-blue-500/20 border border-blue-500/30 text-blue-400 text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full items-center gap-1 shadow-sm">
                 <Sparkles size={8} /> Gemini 2.5 Active
               </span>
             </div>
@@ -217,15 +217,15 @@ export default function CVEditorPage() {
           ) : (
             <>
               <Download size={14} />
-              <span>Tải xuống PDF</span>
+              <span className="hidden sm:inline">Tải xuống PDF</span>
             </>
           )}
         </button>
       </header>
 
       {/* WORKSPACE REGION */}
-      <div className="flex-1 flex overflow-hidden">
-        <div className="print:hidden h-full flex shrink-0">
+      <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden">
+        <div className="print:hidden flex w-full lg:h-full lg:w-auto lg:shrink-0">
           <CVFormSidebar
             cvData={cvData}
             onChange={handleInputChange}
