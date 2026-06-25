@@ -10,9 +10,23 @@ export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getDashboardStats() {
-    const [totalCandidates, pendingEmployers, openJobs, rejectedApplications] =
+    const [
+      totalUsers,
+      totalCandidates,
+      totalEmployers,
+      pendingEmployers,
+      openJobs,
+      totalApplications,
+      totalStories,
+    ] =
       await Promise.all([
+        this.prisma.user.count(),
         this.prisma.candidateProfile.count(),
+        this.prisma.user.count({
+          where: {
+            role: { name: 'Employer' },
+          },
+        }),
         this.prisma.user.count({
           where: {
             role: { name: 'Employer' },
@@ -22,16 +36,18 @@ export class AdminService {
         this.prisma.job.count({
           where: { status: 'OPEN' },
         }),
-        this.prisma.application.count({
-          where: { status: 'REJECTED' },
-        }),
+        this.prisma.application.count(),
+        this.prisma.testimonial.count(),
       ]);
 
     return {
+      totalUsers,
       totalCandidates,
+      totalEmployers,
       pendingEmployers,
       openJobs,
-      rejectedApplications,
+      totalApplications,
+      totalStories,
     };
   }
 
@@ -145,6 +161,26 @@ export class AdminService {
     return this.prisma.category.findMany({
       orderBy: {
         id: 'asc',
+      },
+    });
+  }
+
+  async getAllStories() {
+    return this.prisma.testimonial.findMany({
+      include: {
+        author: {
+          include: {
+            user: {
+              select: {
+                fullName: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }
@@ -345,6 +381,20 @@ export class AdminService {
 
     return this.prisma.application.delete({
       where: { id: applicationId },
+    });
+  }
+
+  async deleteStory(storyId: string) {
+    const story = await this.prisma.testimonial.findUnique({
+      where: { id: storyId },
+    });
+
+    if (!story) {
+      throw new NotFoundException('Không tìm thấy bài viết/câu chuyện này.');
+    }
+
+    return this.prisma.testimonial.delete({
+      where: { id: storyId },
     });
   }
 }

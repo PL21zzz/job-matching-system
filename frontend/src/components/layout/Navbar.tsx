@@ -6,10 +6,8 @@ import { authService } from "@/src/services/authService";
 import { useAuthStore } from "@/src/store/useAuthStore";
 import {
   ChevronDown,
-  LayoutDashboard,
   LogOut,
   Menu,
-  Settings,
   ShieldAlert,
   User,
   X,
@@ -76,7 +74,6 @@ export const Navbar = () => {
           href: "/admin/dashboard",
           icon: ShieldAlert,
         },
-        { name: "Cài đặt hệ thống", href: "/settings", icon: Settings },
       ];
     }
 
@@ -85,15 +82,6 @@ export const Navbar = () => {
       ...(roleName === "Candidate"
         ? [{ name: "Bài viết của tôi", href: "/stories/manage", icon: Zap }]
         : []),
-      {
-        name: "Bàn làm việc",
-        href:
-          roleName === "EMPLOYER" || roleName === "Employer"
-            ? "/employer/manage-jobs"
-            : "/resumes/templates",
-        icon: LayoutDashboard,
-      },
-      { name: "Cài đặt", href: "/settings", icon: Settings },
     ];
   };
 

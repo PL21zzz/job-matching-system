@@ -67,6 +67,10 @@ export default function BlindJobAssistant({
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    setAccessibilityNeeds(
+      "Ưu tiên trải nghiệm tìm việc bằng giọng nói, nội dung rõ ràng, dễ nghe và mô tả công việc cụ thể theo đúng nhu cầu trợ năng của người dùng.",
+    );
+
     authService
       .getProfileMeSafe()
       .then((user) => {
@@ -118,6 +122,43 @@ export default function BlindJobAssistant({
       window.speechSynthesis.removeEventListener("voiceschanged", loadVoices);
     };
   }, []);
+
+  useEffect(() => {
+    const summary = profileSummary.toLowerCase();
+
+    if (!summary) {
+      return;
+    }
+
+    if (
+      /(khuyết tật vận động|vận động|xe lăn)/i.test(profileSummary)
+    ) {
+      setAccessibilityNeeds(
+        "Người dùng thuộc nhóm khuyết tật vận động. Hãy ưu tiên công việc có mô tả môi trường làm việc rõ ràng, di chuyển phù hợp, ca làm cụ thể và trợ năng thực tế tại nơi làm việc.",
+      );
+      return;
+    }
+
+    if (/(khiếm thị|mù|thị giác)/i.test(profileSummary)) {
+      setAccessibilityNeeds(
+        "Người dùng thuộc nhóm khiếm thị. Hãy ưu tiên mô tả công việc rõ ràng, dễ nghe, có thông tin trợ năng cụ thể và giải thích chi tiết bằng giọng nói.",
+      );
+      return;
+    }
+
+    if (/(khiếm thính|điếc|thính giác)/i.test(profileSummary)) {
+      setAccessibilityNeeds(
+        "Người dùng thuộc nhóm khiếm thính. Hãy ưu tiên công việc có giao tiếp rõ ràng qua văn bản, quy trình cụ thể và môi trường làm việc dễ phối hợp.",
+      );
+      return;
+    }
+
+    if (/(câm|khó nói|ngôn ngữ)/i.test(profileSummary)) {
+      setAccessibilityNeeds(
+        "Người dùng thuộc nhóm câm hoặc khó nói. Hãy ưu tiên công việc có thể trao đổi qua văn bản, quy trình rõ ràng và mô tả chi tiết dễ hiểu.",
+      );
+    }
+  }, [profileSummary]);
 
   useEffect(() => {
     return () => {

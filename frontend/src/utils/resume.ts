@@ -3,16 +3,41 @@ export const getDisabilityTag = (type: string | undefined) => {
 
   const formattedType = type.toLowerCase();
 
-  if (formattedType.includes("vận động") || formattedType.includes("chi")) {
-    return { label: "Assistive Wheelchair", icon: "♿" };
-  }
-  if (formattedType.includes("thị") || formattedType.includes("nhìn")) {
-    return { label: "Screen Reader Ready", icon: "👁️" };
-  }
-  if (formattedType.includes("thính") || formattedType.includes("nói")) {
-    return { label: "Sign Language / Subtitles", icon: "🧏" };
+  if (
+    formattedType.includes("vận động") ||
+    formattedType.includes("khuyết tật vận động") ||
+    formattedType.includes("xe lăn") ||
+    formattedType.includes("mobility")
+  ) {
+    return { label: "Khuyết tật vận động", icon: "♿" };
   }
 
-  // Trường hợp mặc định nếu có loại khác
+  if (
+    formattedType.includes("khiếm thị") ||
+    formattedType.includes("mù") ||
+    formattedType.includes("thị giác") ||
+    formattedType.includes("blind")
+  ) {
+    return { label: "Khiếm thị", icon: "👁️" };
+  }
+
+  if (
+    formattedType.includes("khiếm thính") ||
+    formattedType.includes("điếc") ||
+    formattedType.includes("thính giác") ||
+    formattedType.includes("hearing")
+  ) {
+    return { label: "Khiếm thính", icon: "🦻" };
+  }
+
+  if (
+    formattedType.includes("câm") ||
+    formattedType.includes("khó nói") ||
+    formattedType.includes("speech") ||
+    formattedType.includes("ngôn ngữ")
+  ) {
+    return { label: "Câm / khó nói", icon: "💬" };
+  }
+
   return { label: type, icon: "✨" };
 };

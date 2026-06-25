@@ -49,6 +49,11 @@ export class AdminController {
     return this.adminService.getAllCategories();
   }
 
+  @Get('stories')
+  async getAllStories() {
+    return this.adminService.getAllStories();
+  }
+
   @Post('categories')
   async createCategory(@Body('name') name: string) {
     return this.adminService.createCategory(name);
@@ -85,5 +90,10 @@ export class AdminController {
   @Delete('applications/:id')
   async deleteApplication(@Param('id') applicationId: string) {
     return this.adminService.deleteApplication(applicationId);
+  }
+
+  @Delete('stories/:id')
+  async deleteStory(@Param('id') storyId: string) {
+    return this.adminService.deleteStory(storyId);
   }
 }

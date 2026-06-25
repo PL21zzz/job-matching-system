@@ -1,6 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Injectable } from '@nestjs/common';
-import { extractAccessibilityTags } from '../jobs/disability-support';
+import {
+  extractAccessibilityTags,
+  SUPPORTED_DISABILITY_TYPES,
+} from '../jobs/disability-support';
 import { PrismaService } from '../prisma/prisma.service';
 import { VoiceService } from '../voice/voice.service';
 import { ChatCareerAssistantDto } from './dto/chat-career-assistant.dto';
@@ -22,6 +25,7 @@ type RankedJob = {
 @Injectable()
 export class CareerAssistantService {
   private readonly ai?: GoogleGenerativeAI;
+  private static readonly AI_TIMEOUT_MS = 30000;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -32,8 +36,88 @@ export class CareerAssistantService {
     }
   }
 
+  private withAiTimeout<T>(promise: Promise<T>, label = 'Gemini'): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`${label} timeout after 30 seconds`)),
+          CareerAssistantService.AI_TIMEOUT_MS,
+        ),
+      ),
+    ]);
+  }
+
+  private normalizeText(text?: string | null) {
+    return (text || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private inferDisabilityFocus(dto: ChatCareerAssistantDto, message: string) {
+    const corpus = this.normalizeText(
+      [
+        message,
+        dto.profileSummary,
+        dto.accessibilityNeeds,
+        ...(dto.history || []).map((item) => item.content),
+      ]
+        .filter(Boolean)
+        .join(' '),
+    );
+
+    return SUPPORTED_DISABILITY_TYPES.find((item) =>
+      item.aliases.some((alias) => corpus.includes(this.normalizeText(alias))),
+    );
+  }
+
+  private isJobDetailQuestion(message: string) {
+    const normalized = this.normalizeText(message);
+    return /(chi tiet|mo ta|cong viec nay|viec nay|job nay|luong|dia diem|thoi gian|ca lam|yeu cau|tro nang)/.test(
+      normalized,
+    );
+  }
+
+  private findReferencedJob(message: string, jobs: RankedJob[]) {
+    const normalized = this.normalizeText(message);
+
+    return jobs.find((job) => {
+      const title = this.normalizeText(job.title);
+      if (normalized.includes(title)) {
+        return true;
+      }
+
+      const titleTokens = title.split(/\s+/).filter((token) => token.length >= 4);
+      const matchedTokens = titleTokens.filter((token) =>
+        normalized.includes(token),
+      ).length;
+
+      return matchedTokens >= Math.min(3, titleTokens.length);
+    });
+  }
+
+  private buildJobDetailFallbackAnswer(job: RankedJob) {
+    const parts = [
+      `Công việc ${job.title} tại ${job.companyName || 'doanh nghiệp đang cập nhật'}.`,
+      `Địa điểm làm việc: ${job.location}.`,
+      `Hình thức: ${job.type}.`,
+      job.salaryText ? `Mức lương: ${job.salaryText}.` : '',
+      job.accessibilityFeatures
+        ? `Thông tin trợ năng: ${job.accessibilityFeatures}.`
+        : 'Tin này chưa mô tả rõ trợ năng chi tiết.',
+      job.reasons.length
+        ? `Điểm phù hợp: ${job.reasons.join(', ')}.`
+        : '',
+      'Bạn muốn tôi nói tiếp về yêu cầu công việc hay mức độ phù hợp với hồ sơ của bạn?',
+    ];
+
+    return parts.filter(Boolean).join(' ');
+  }
+
   async chat(dto: ChatCareerAssistantDto) {
     const normalizedMessage = dto.message.trim();
+    const disabilityFocus = this.inferDisabilityFocus(dto, normalizedMessage);
     const openJobs = await this.prisma.job.findMany({
       where: { status: 'OPEN' },
       include: {
@@ -60,7 +144,9 @@ export class CareerAssistantService {
     });
 
     const rankedJobs = openJobs
-      .map((job) => this.rankJob(job, dto, normalizedMessage))
+      .map((job) =>
+        this.rankJob(job, dto, normalizedMessage, disabilityFocus?.name),
+      )
       .filter((job) => job.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 5);
@@ -70,9 +156,27 @@ export class CareerAssistantService {
         ? rankedJobs
         : openJobs
             .slice(0, 3)
-            .map((job) => this.rankJob(job, dto, normalizedMessage, true));
+            .map((job) =>
+              this.rankJob(
+                job,
+                dto,
+                normalizedMessage,
+                disabilityFocus?.name,
+                true,
+              ),
+            );
 
-    const answer = await this.buildAnswer(dto, fallbackJobs);
+    const referencedJob = this.findReferencedJob(normalizedMessage, fallbackJobs);
+    const responseJobs =
+      referencedJob && this.isJobDetailQuestion(normalizedMessage)
+        ? [referencedJob]
+        : fallbackJobs;
+
+    const answer = await this.buildAnswer(
+      dto,
+      responseJobs,
+      disabilityFocus?.name,
+    );
     const audioUrl = await this.voiceService.synthesizeVietnamese(answer);
 
     return {
@@ -80,7 +184,7 @@ export class CareerAssistantService {
       answer,
       audioUrl,
       source: this.ai ? 'gemini_with_local_ranking' : 'local_ranking_only',
-      suggestedJobs: fallbackJobs.map((job) => ({
+      suggestedJobs: responseJobs.map((job) => ({
         id: job.id,
         title: job.title,
         location: job.location,
@@ -105,6 +209,7 @@ export class CareerAssistantService {
     job: any,
     dto: ChatCareerAssistantDto,
     normalizedMessage: string,
+    disabilityFocusName?: string,
     forceInclude = false,
   ): RankedJob {
     const suitabilityNames = job.suitableDisabilities.map((item: any) =>
@@ -169,6 +274,14 @@ export class CareerAssistantService {
       `${accessibilityTextForPrompt} ${suitabilityNames.join(' ')}`.toLowerCase();
 
     if (
+      disabilityFocusName &&
+      accessibilityHaystack.includes(disabilityFocusName.toLowerCase())
+    ) {
+      score += 8;
+      reasons.push(`Có mô tả hỗ trợ gần với nhu cầu ${disabilityFocusName}`);
+    }
+
+    if (
       blindFocused &&
       /(khiem thi|khiếm thị|mù|mu|blind|screen reader|đọc màn hình)/i.test(
         accessibilityHaystack,
@@ -230,9 +343,18 @@ export class CareerAssistantService {
     ).slice(0, 24);
   }
 
-  private async buildAnswer(dto: ChatCareerAssistantDto, jobs: RankedJob[]) {
+  private async buildAnswer(
+    dto: ChatCareerAssistantDto,
+    jobs: RankedJob[],
+    disabilityFocusName?: string,
+  ) {
     if (!jobs.length) {
       return 'Tôi chưa tìm thấy công việc thật sự gần với nhu cầu bạn vừa nói. Bạn hãy nói rõ hơn về kỹ năng, khu vực hoặc nhu cầu trợ năng để tôi lọc chính xác hơn.';
+    }
+
+    const referencedJob = this.findReferencedJob(dto.message, jobs);
+    if (referencedJob && this.isJobDetailQuestion(dto.message)) {
+      return this.buildJobDetailFallbackAnswer(referencedJob);
     }
 
     const fallbackAnswer = this.buildFallbackAnswer(dto, jobs);
@@ -281,7 +403,10 @@ Danh sách việc được xếp hạng:
 ${jobsText}
 `;
 
-      const result = await model.generateContent(prompt);
+      const result = await this.withAiTimeout(
+        model.generateContent(prompt),
+        'Gemini career assistant',
+      );
       const text = result.response.text().trim();
       return text || fallbackAnswer;
     } catch {

@@ -40,6 +40,8 @@ export const careerAssistantService = {
   chat: async (
     payload: CareerAssistantRequest,
   ): Promise<CareerAssistantResponse> => {
-    return api.post("/career-assistant/chat", payload);
+    return api.post("/career-assistant/chat", payload, {
+      timeout: 30000,
+    });
   },
 };

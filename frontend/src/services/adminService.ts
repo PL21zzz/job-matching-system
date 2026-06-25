@@ -31,6 +31,11 @@ export const adminService = {
     return response;
   },
 
+  getAllStories: async () => {
+    const response = await api.get("/admin/stories");
+    return response;
+  },
+
   createCategory: async (name: string) => {
     const response = await api.post("/admin/categories", { name });
     return response;
@@ -68,6 +73,11 @@ export const adminService = {
 
   deleteApplication: async (applicationId: string) => {
     const response = await api.delete(`/admin/applications/${applicationId}`);
+    return response;
+  },
+
+  deleteStory: async (storyId: string) => {
+    const response = await api.delete(`/admin/stories/${storyId}`);
     return response;
   },
 };

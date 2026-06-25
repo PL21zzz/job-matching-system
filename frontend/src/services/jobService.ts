@@ -74,7 +74,14 @@ export const jobService = {
       message?: string;
       history?: InterviewHistoryItem[];
     },
-  ): Promise<{ reply: string; focusPoints: string[] }> => {
+  ): Promise<{
+    reply: string;
+    focusPoints: string[];
+    isCompleted?: boolean;
+    currentQuestion?: number;
+    totalQuestions?: number;
+    disabilityTypeLabel?: string;
+  }> => {
     return api.post(`/jobs/${jobId}/interview-practice`, payload);
   },
 };

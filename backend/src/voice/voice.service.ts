@@ -6,11 +6,24 @@ import * as fs from 'fs';
 @Injectable()
 export class VoiceService {
   private readonly ai?: GoogleGenAI;
+  private static readonly AI_TIMEOUT_MS = 30000;
 
   constructor() {
     if (process.env.GEMINI_API_KEY) {
       this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     }
+  }
+
+  private withAiTimeout<T>(promise: Promise<T>, label = 'Gemini'): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`${label} timeout after 30 seconds`)),
+          VoiceService.AI_TIMEOUT_MS,
+        ),
+      ),
+    ]);
   }
 
   async handleVoiceInteraction(file: Express.Multer.File): Promise<string> {

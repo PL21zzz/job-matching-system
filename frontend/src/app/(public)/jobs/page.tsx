@@ -6,9 +6,11 @@ import JobSearch from "@/src/components/sections/jobs/JobSearch";
 import { DISABILITY_FOCUS_OPTIONS } from "@/src/constants/jobs";
 import { getAccessibilityTags } from "@/src/lib/job-accessibility";
 import { jobService } from "@/src/services/jobService";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
-export default function JobListingPage() {
+function JobListingPageContent() {
+  const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -20,6 +22,17 @@ export default function JobListingPage() {
     accessibility: "",
     disabilityFocus: "",
   });
+
+  useEffect(() => {
+    const search = searchParams.get("search") || "";
+    const location = searchParams.get("location") || "";
+
+    setFilters((current) => ({
+      ...current,
+      search,
+      location,
+    }));
+  }, [searchParams]);
 
   useEffect(() => {
     jobService
@@ -102,5 +115,17 @@ export default function JobListingPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function JobListingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white dark:bg-secondary text-slate-900 dark:text-white" />
+      }
+    >
+      <JobListingPageContent />
+    </Suspense>
   );
 }

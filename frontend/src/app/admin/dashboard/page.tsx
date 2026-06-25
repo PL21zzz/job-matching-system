@@ -4,14 +4,16 @@ import { TableLayout } from "@/src/components/sections/admin/TableLayout";
 import { adminService } from "@/src/services/adminService";
 import { authService } from "@/src/services/authService";
 import {
-  Edit,
+  BriefcaseBusiness,
+  Building2,
+  FileText,
   FolderTree,
   Loader2,
   Plus,
   Search,
   ShieldAlert,
-  Trash2,
   UserCheck,
+  Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -22,28 +24,36 @@ type AdminTab =
   | "candidates"
   | "jobs"
   | "applications"
-  | "categories";
+  | "categories"
+  | "stories";
+
 type DeleteType =
   | "employer"
   | "candidate"
   | "job"
   | "application"
-  | "category";
+  | "category"
+  | "story";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
 
   const [stats, setStats] = useState({
+    totalUsers: 0,
     totalCandidates: 0,
+    totalEmployers: 0,
     pendingEmployers: 0,
     openJobs: 0,
-    rejectedApplications: 0,
+    totalApplications: 0,
+    totalStories: 0,
   });
+
   const [employers, setEmployers] = useState<any[]>([]);
   const [candidates, setCandidates] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [stories, setStories] = useState<any[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
 
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -63,6 +73,7 @@ export default function AdminDashboardPage() {
         jobsRes,
         appsRes,
         categoriesRes,
+        storiesRes,
       ] = await Promise.all([
         adminService.getDashboardStats().catch(() => null),
         adminService.getAllEmployers().catch(() => []),
@@ -70,14 +81,18 @@ export default function AdminDashboardPage() {
         adminService.getAllJobs().catch(() => []),
         adminService.getAllApplications().catch(() => []),
         adminService.getAllCategories().catch(() => []),
+        adminService.getAllStories().catch(() => []),
       ]);
 
       if (statsRes) {
         setStats({
+          totalUsers: statsRes.totalUsers ?? 0,
           totalCandidates: statsRes.totalCandidates ?? 0,
+          totalEmployers: statsRes.totalEmployers ?? 0,
           pendingEmployers: statsRes.pendingEmployers ?? 0,
           openJobs: statsRes.openJobs ?? 0,
-          rejectedApplications: statsRes.rejectedApplications ?? 0,
+          totalApplications: statsRes.totalApplications ?? 0,
+          totalStories: statsRes.totalStories ?? 0,
         });
       }
 
@@ -86,6 +101,7 @@ export default function AdminDashboardPage() {
       setJobs(Array.isArray(jobsRes) ? jobsRes : []);
       setApplications(Array.isArray(appsRes) ? appsRes : []);
       setCategories(Array.isArray(categoriesRes) ? categoriesRes : []);
+      setStories(Array.isArray(storiesRes) ? storiesRes : []);
     } catch {
       toast.error("Không thể tải dữ liệu quản trị.");
     } finally {
@@ -106,40 +122,14 @@ export default function AdminDashboardPage() {
         }
 
         setIsCheckingAuth(false);
-        loadAdminData();
+        void loadAdminData();
       })
       .catch(() => router.replace("/login"));
   }, [router]);
 
-  const handleEdit = async (id: string | number, type: string) => {
-    if (type !== "category") {
-      toast.success(`Chức năng chỉnh sửa ${type} sẽ làm tiếp sau.`);
-      return;
-    }
-
-    const currentCategory = categories.find((item) => item.id === id);
-    const name = window.prompt(
-      "Nhập tên category mới",
-      currentCategory?.name || "",
-    );
-
-    if (!name || !name.trim()) return;
-
-    try {
-      setActionId(id);
-      await adminService.updateCategory(Number(id), name.trim());
-      toast.success("Đã cập nhật category.");
-      loadAdminData();
-    } catch (error: any) {
-      toast.error(typeof error === "string" ? error : "Sửa category thất bại.");
-    } finally {
-      setActionId(null);
-    }
-  };
-
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
-      toast.error("Vui lòng nhập tên category.");
+      toast.error("Vui lòng nhập tên danh mục.");
       return;
     }
 
@@ -147,10 +137,35 @@ export default function AdminDashboardPage() {
       setActionId("new-category");
       await adminService.createCategory(newCategoryName.trim());
       setNewCategoryName("");
-      toast.success("Đã tạo category mới.");
-      loadAdminData();
+      toast.success("Đã tạo danh mục mới.");
+      await loadAdminData();
     } catch (error: any) {
-      toast.error(typeof error === "string" ? error : "Tạo category thất bại.");
+      toast.error(
+        typeof error === "string" ? error : "Tạo danh mục thất bại.",
+      );
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handleEditCategory = async (id: number) => {
+    const currentCategory = categories.find((item) => item.id === id);
+    const name = window.prompt(
+      "Nhập tên danh mục mới",
+      currentCategory?.name || "",
+    );
+
+    if (!name || !name.trim()) return;
+
+    try {
+      setActionId(id);
+      await adminService.updateCategory(id, name.trim());
+      toast.success("Đã cập nhật danh mục.");
+      await loadAdminData();
+    } catch (error: any) {
+      toast.error(
+        typeof error === "string" ? error : "Cập nhật danh mục thất bại.",
+      );
     } finally {
       setActionId(null);
     }
@@ -167,7 +182,7 @@ export default function AdminDashboardPage() {
           ? "Đã khóa tài khoản thành công."
           : "Đã mở khóa tài khoản.",
       );
-      loadAdminData();
+      await loadAdminData();
     } catch {
       toast.error("Cập nhật trạng thái người dùng thất bại.");
     } finally {
@@ -176,7 +191,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleDelete = async (id: string | number, type: DeleteType) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa ${type} này khỏi hệ thống?`)) {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa ${type} này không?`)) {
       return;
     }
 
@@ -185,27 +200,20 @@ export default function AdminDashboardPage() {
 
       if (type === "employer" || type === "candidate") {
         await adminService.deleteUser(String(id));
-        toast.success(
-          type === "employer"
-            ? "Đã xóa tài khoản nhà tuyển dụng và dữ liệu liên quan."
-            : "Đã xóa tài khoản ứng viên và dữ liệu liên quan.",
-        );
       } else if (type === "job") {
         await adminService.deleteJob(String(id));
-        toast.success("Đã xóa tin tuyển dụng.");
       } else if (type === "application") {
         await adminService.deleteApplication(String(id));
-        toast.success("Đã xóa đơn ứng tuyển.");
+      } else if (type === "story") {
+        await adminService.deleteStory(String(id));
       } else {
         await adminService.deleteCategory(Number(id));
-        toast.success("Đã xóa category.");
       }
 
-      loadAdminData();
+      toast.success("Đã xử lý thao tác xóa.");
+      await loadAdminData();
     } catch (error: any) {
-      toast.error(
-        typeof error === "string" ? error : "Thao tác xóa thất bại.",
-      );
+      toast.error(typeof error === "string" ? error : "Xóa dữ liệu thất bại.");
     } finally {
       setActionId(null);
     }
@@ -253,7 +261,7 @@ export default function AdminDashboardPage() {
     [jobs, normalizedSearch],
   );
 
-  const filteredApps = useMemo(
+  const filteredApplications = useMemo(
     () =>
       applications.filter((app) =>
         [
@@ -277,156 +285,160 @@ export default function AdminDashboardPage() {
     [categories, normalizedSearch],
   );
 
+  const filteredStories = useMemo(
+    () =>
+      stories.filter((story) =>
+        [
+          story.title,
+          story.authorName,
+          story.authorRole,
+          story.status,
+          story.author?.user?.email,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(normalizedSearch)),
+      ),
+    [stories, normalizedSearch],
+  );
+
   if (isCheckingAuth) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center gap-2 bg-[#f8f9fa] text-slate-600">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="text-xs font-bold uppercase tracking-wider">
-          Đang kiểm tra quyền truy cập quản trị...
-        </p>
+      <div className="flex h-screen items-center justify-center bg-slate-50 text-slate-600">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-xs font-bold uppercase tracking-wider">
+            Đang kiểm tra quyền truy cập...
+          </p>
+        </div>
       </div>
     );
   }
 
-  const statCardClass =
-    "h-28 cursor-pointer overflow-hidden rounded-md shadow-xs transition";
+  const statCards = [
+    {
+      key: "candidates",
+      label: "Ứng viên",
+      value: stats.totalCandidates,
+      helper: `${stats.totalUsers} tài khoản toàn hệ thống`,
+      icon: Users,
+      tone: "bg-sky-600 text-white",
+    },
+    {
+      key: "employers",
+      label: "Doanh nghiệp",
+      value: stats.totalEmployers,
+      helper: `${stats.pendingEmployers} doanh nghiệp chờ duyệt`,
+      icon: Building2,
+      tone: "bg-amber-500 text-slate-950",
+    },
+    {
+      key: "jobs",
+      label: "Tin đang mở",
+      value: stats.openJobs,
+      helper: `${stats.totalApplications} đơn ứng tuyển đã nhận`,
+      icon: BriefcaseBusiness,
+      tone: "bg-emerald-600 text-white",
+    },
+    {
+      key: "stories",
+      label: "Bài viết cộng đồng",
+      value: stats.totalStories,
+      helper: "Quản lý nội dung truyền cảm hứng",
+      icon: FileText,
+      tone: "bg-fuchsia-600 text-white",
+    },
+  ];
 
   return (
-    <div className="min-h-screen w-full bg-[#f8f9fa] font-sans text-slate-800">
-      <nav className="flex w-full flex-col gap-3 bg-[#343a40] px-4 py-3 text-white shadow-xs sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          className="w-fit cursor-pointer text-lg font-bold uppercase text-slate-200 transition-colors hover:text-white"
-        >
-          Equitas Central Admin
-        </button>
+    <div className="min-h-screen bg-slate-50 text-slate-800">
+      <nav className="border-b border-slate-200 bg-slate-900 px-4 py-4 text-white shadow-sm sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="w-fit text-lg font-bold tracking-tight"
+          >
+            Equitas Central Admin
+          </button>
 
-        <div className="flex w-full items-center gap-2 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-2 sm:w-72">
-          <Search size={14} className="text-slate-400" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm nhanh..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent text-xs text-white outline-hidden"
-          />
+          <div className="flex w-full items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 sm:w-80">
+            <Search size={14} className="text-slate-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Tìm kiếm dữ liệu quản trị..."
+              className="w-full bg-transparent text-sm outline-none"
+            />
+          </div>
         </div>
       </nav>
 
       <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-3xl font-normal tracking-tight text-slate-900">
-            Dashboard Admin
-          </h1>
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-primary">
+              Quản trị hệ thống
+            </p>
+            <h1 className="mt-2 text-3xl font-black text-slate-900">
+              Bảng điều khiển Admin
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              Quản lý người dùng, tin tuyển dụng, đơn ứng tuyển, danh mục và bài
+              viết cộng đồng tại một nơi.
+            </p>
+          </div>
 
           <button
             onClick={loadAdminData}
             disabled={loadingData}
-            className="rounded-md border bg-white px-4 py-2 text-xs font-bold transition hover:bg-slate-50 disabled:opacity-50"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold transition hover:bg-slate-100 disabled:opacity-60"
           >
             {loadingData ? "Đang nạp..." : "Làm mới dữ liệu"}
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-          <div
-            onClick={() => setActiveTab("candidates")}
-            className={`${statCardClass} ${
-              activeTab === "candidates"
-                ? "scale-[1.02] bg-[#0056b3] text-white"
-                : "bg-[#007bff] text-white"
-            }`}
-          >
-            <div className="flex items-center justify-between p-4">
-              <span className="text-sm font-semibold uppercase tracking-wider">
-                Tổng ứng viên
-              </span>
-              <span className="text-2xl font-black">{stats.totalCandidates}</span>
-            </div>
-            <div className="flex items-center justify-between bg-black/10 px-4 py-2 text-[11px] font-medium">
-              <span>Xem danh sách</span>
-              <span>→</span>
-            </div>
-          </div>
-
-          <div
-            onClick={() => setActiveTab("employers")}
-            className={`${statCardClass} ${
-              activeTab === "employers"
-                ? "bg-[#d39e00] text-slate-950"
-                : "bg-[#ffc107] text-slate-900"
-            }`}
-          >
-            <div className="flex items-center justify-between p-4">
-              <span className="text-sm font-semibold uppercase tracking-wider">
-                Nhà tuyển dụng
-              </span>
-              <span className="text-2xl font-black">{employers.length}</span>
-            </div>
-            <div className="flex items-center justify-between bg-black/5 px-4 py-2 text-[11px] font-medium">
-              <span>Xem danh sách</span>
-              <span>→</span>
-            </div>
-          </div>
-
-          <div
-            onClick={() => setActiveTab("jobs")}
-            className={`${statCardClass} ${
-              activeTab === "jobs"
-                ? "scale-[1.02] bg-[#1e7e34] text-white"
-                : "bg-[#28a745] text-white"
-            }`}
-          >
-            <div className="flex items-center justify-between p-4">
-              <span className="text-sm font-semibold uppercase tracking-wider">
-                Tin tuyển dụng mở
-              </span>
-              <span className="text-2xl font-black">{stats.openJobs}</span>
-            </div>
-            <div className="flex items-center justify-between bg-black/10 px-4 py-2 text-[11px] font-medium">
-              <span>Kiểm tra hệ thống</span>
-              <span>→</span>
-            </div>
-          </div>
-
-          <div
-            onClick={() => setActiveTab("applications")}
-            className={`${statCardClass} ${
-              activeTab === "applications"
-                ? "scale-[1.02] bg-[#bd2130] text-white"
-                : "bg-[#dc3545] text-white"
-            }`}
-          >
-            <div className="flex items-center justify-between p-4">
-              <span className="text-sm font-semibold uppercase tracking-wider">
-                Đơn ứng tuyển
-              </span>
-              <span className="text-2xl font-black">{applications.length}</span>
-            </div>
-            <div className="flex items-center justify-between bg-black/10 px-4 py-2 text-[11px] font-medium">
-              <span>Giám sát luồng nộp</span>
-              <span>→</span>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+          {statCards.map((card) => (
+            <button
+              key={card.key}
+              type="button"
+              onClick={() => setActiveTab(card.key as AdminTab)}
+              className={`overflow-hidden rounded-2xl text-left shadow-sm transition hover:scale-[1.01] ${card.tone}`}
+            >
+              <div className="flex items-center justify-between p-5">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.25em] opacity-80">
+                    {card.label}
+                  </p>
+                  <p className="mt-3 text-3xl font-black">{card.value}</p>
+                </div>
+                <card.icon size={28} className="opacity-90" />
+              </div>
+              <div className="bg-black/10 px-5 py-3 text-xs font-semibold">
+                {card.helper}
+              </div>
+            </button>
+          ))}
         </div>
 
-        <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-xs">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="flex gap-4 overflow-x-auto border-b border-slate-200 bg-slate-50 px-4">
             {[
               ["employers", `Doanh nghiệp (${filteredEmployers.length})`],
               ["candidates", `Ứng viên (${filteredCandidates.length})`],
               ["jobs", `Tin tuyển dụng (${filteredJobs.length})`],
-              ["applications", `Đơn ứng tuyển (${filteredApps.length})`],
-              ["categories", `Category (${filteredCategories.length})`],
+              ["applications", `Đơn ứng tuyển (${filteredApplications.length})`],
+              ["categories", `Danh mục (${filteredCategories.length})`],
+              ["stories", `Bài viết (${filteredStories.length})`],
             ].map(([tab, label]) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as AdminTab)}
-                className={`shrink-0 border-b-2 px-2 py-3.5 text-xs font-bold uppercase transition-colors ${
+                className={`shrink-0 border-b-2 px-2 py-4 text-xs font-bold uppercase transition-colors ${
                   activeTab === tab
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-slate-500 hover:text-slate-800"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-slate-500 hover:text-slate-900"
                 }`}
               >
                 {label}
@@ -434,7 +446,7 @@ export default function AdminDashboardPage() {
             ))}
           </div>
 
-          <div className="p-2">
+          <div className="p-3">
             {activeTab === "categories" && (
               <div className="space-y-4">
                 <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row">
@@ -442,8 +454,8 @@ export default function AdminDashboardPage() {
                     type="text"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="Nhập category mới, ví dụ: Vệ sinh & Tạp vụ"
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-primary"
+                    placeholder="Nhập danh mục mới, ví dụ: Vệ sinh & Tạp vụ"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary"
                   />
                   <button
                     type="button"
@@ -456,21 +468,16 @@ export default function AdminDashboardPage() {
                     ) : (
                       <Plus size={16} />
                     )}
-                    Thêm category
+                    Thêm danh mục
                   </button>
                 </div>
 
                 <TableLayout
                   data={filteredCategories}
-                  headers={["ID", "Tên category"]}
+                  headers={["ID", "Tên danh mục"]}
                   renderRow={(category) => (
-                    <tr
-                      key={category.id}
-                      className="text-xs font-medium text-slate-700 transition hover:bg-slate-50/50"
-                    >
-                      <td className="p-4 font-mono text-slate-500">
-                        {category.id}
-                      </td>
+                    <tr key={category.id} className="text-sm">
+                      <td className="p-4 text-slate-500">{category.id}</td>
                       <td className="p-4 font-bold text-slate-900">
                         <div className="inline-flex items-center gap-2">
                           <FolderTree size={14} className="text-primary" />
@@ -478,25 +485,19 @@ export default function AdminDashboardPage() {
                         </div>
                       </td>
                       <td className="p-4 text-right">
-                        <div className="inline-flex gap-1.5">
+                        <div className="inline-flex gap-2">
                           <button
-                            onClick={() => handleEdit(category.id, "category")}
-                            className="cursor-pointer rounded-md bg-slate-100 p-1.5 text-slate-700 transition hover:bg-slate-200"
-                            title="Sửa category"
+                            onClick={() => handleEditCategory(category.id)}
+                            className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-200"
                           >
-                            <Edit size={13} />
+                            Sửa
                           </button>
                           <button
                             disabled={actionId === category.id}
                             onClick={() => handleDelete(category.id, "category")}
-                            className="cursor-pointer rounded-md border border-red-100 bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100"
-                            title="Xóa category"
+                            className="rounded-md border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 disabled:opacity-60"
                           >
-                            {actionId === category.id ? (
-                              <Loader2 size={13} className="animate-spin" />
-                            ) : (
-                              <Trash2 size={13} />
-                            )}
+                            Xóa
                           </button>
                         </div>
                       </td>
@@ -510,80 +511,58 @@ export default function AdminDashboardPage() {
               <TableLayout
                 data={filteredEmployers}
                 headers={[
-                  "Tên doanh nghiệp",
+                  "Doanh nghiệp",
+                  "Email",
                   "Mã số thuế",
-                  "Địa chỉ văn phòng",
                   "Trạng thái",
                 ]}
                 renderRow={(emp) => (
-                  <tr
-                    key={emp.id}
-                    className="text-xs font-medium text-slate-700 transition hover:bg-slate-50/50"
-                  >
-                    <td className="p-4 font-bold uppercase text-slate-950">
+                  <tr key={emp.id} className="text-sm">
+                    <td className="p-4 font-bold text-slate-900">
                       {emp.employerProfile?.companyName || "Chưa cập nhật"}
                     </td>
-                    <td className="p-4 font-mono text-slate-500">
+                    <td className="p-4 text-slate-600">{emp.email}</td>
+                    <td className="p-4 text-slate-500">
                       {emp.employerProfile?.taxCode || "N/A"}
                     </td>
-                    <td className="max-w-xs truncate p-4 text-slate-600">
-                      {emp.employerProfile?.address || "N/A"}
-                    </td>
                     <td className="p-4">
-                      {emp.status === "BANNED" ? (
-                        <span className="font-bold uppercase text-red-500">
-                          Bị khóa
-                        </span>
-                      ) : (
-                        <span className="font-bold uppercase text-emerald-600">
-                          Hoạt động
-                        </span>
-                      )}
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-bold ${
+                          emp.status === "BANNED"
+                            ? "bg-red-50 text-red-600"
+                            : emp.status === "PENDING"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-emerald-50 text-emerald-700"
+                        }`}
+                      >
+                        {emp.status}
+                      </span>
                     </td>
                     <td className="p-4 text-right">
-                      <div className="inline-flex gap-1.5">
+                      <div className="inline-flex gap-2">
                         <button
                           disabled={actionId !== null}
                           onClick={() => handleUpdateStatus(emp.id, emp.status)}
-                          className={`cursor-pointer rounded-md border p-1.5 transition ${
-                            emp.status === "BANNED"
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-600"
-                              : "border-orange-200 bg-orange-50 text-orange-600"
-                          }`}
-                          title={
-                            emp.status === "BANNED"
-                              ? "Mở khóa nhà tuyển dụng"
-                              : "Khóa nhà tuyển dụng"
-                          }
+                          className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold hover:bg-slate-100"
                         >
                           {actionId === emp.id ? (
                             <Loader2 size={13} className="animate-spin" />
                           ) : emp.status === "BANNED" ? (
-                            <UserCheck size={13} />
+                            <span className="inline-flex items-center gap-1">
+                              <UserCheck size={13} /> Mở khóa
+                            </span>
                           ) : (
-                            <ShieldAlert size={13} />
+                            <span className="inline-flex items-center gap-1">
+                              <ShieldAlert size={13} /> Khóa
+                            </span>
                           )}
                         </button>
-
-                        <button
-                          onClick={() => handleEdit(emp.id, "employer")}
-                          className="cursor-pointer rounded-md bg-slate-100 p-1.5 text-slate-700 transition hover:bg-slate-200"
-                          title="Chỉnh sửa"
-                        >
-                          <Edit size={13} />
-                        </button>
-
                         <button
                           disabled={actionId === emp.id}
                           onClick={() => handleDelete(emp.id, "employer")}
-                          className="cursor-pointer rounded-md border border-red-100 bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100"
-                          title="Xóa tài khoản nhà tuyển dụng"
+                          className="rounded-md border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 disabled:opacity-60"
                         >
-                          {actionId === emp.id ? (
-                            <Loader2 size={13} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={13} />
-                          )}
+                          Xóa
                         </button>
                       </div>
                     </td>
@@ -596,79 +575,59 @@ export default function AdminDashboardPage() {
               <TableLayout
                 data={filteredCandidates}
                 headers={[
-                  "Tên ứng viên",
-                  "Email hệ thống",
-                  "Loại khuyết tật",
+                  "Ứng viên",
+                  "Email",
+                  "Nhóm khuyết tật",
                   "Trạng thái",
                 ]}
                 renderRow={(cand) => (
-                  <tr
-                    key={cand.id}
-                    className="text-xs font-medium text-slate-700 transition hover:bg-slate-50/50"
-                  >
-                    <td className="p-4 font-bold text-slate-950">
+                  <tr key={cand.id} className="text-sm">
+                    <td className="p-4 font-bold text-slate-900">
                       {cand.fullName || "Ẩn danh"}
                     </td>
-                    <td className="p-4 font-mono text-slate-500">{cand.email}</td>
-                    <td className="p-4 font-semibold text-slate-600">
+                    <td className="p-4 text-slate-600">{cand.email}</td>
+                    <td className="p-4 text-slate-500">
                       {cand.candidateProfile?.disabilityType?.name ||
                         "Chưa cập nhật"}
                     </td>
                     <td className="p-4">
-                      {cand.status === "BANNED" ? (
-                        <span className="font-bold uppercase text-red-500">
-                          Bị khóa
-                        </span>
-                      ) : (
-                        <span className="font-bold uppercase text-emerald-600">
-                          Hoạt động
-                        </span>
-                      )}
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-bold ${
+                          cand.status === "BANNED"
+                            ? "bg-red-50 text-red-600"
+                            : cand.status === "PENDING"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-emerald-50 text-emerald-700"
+                        }`}
+                      >
+                        {cand.status}
+                      </span>
                     </td>
                     <td className="p-4 text-right">
-                      <div className="inline-flex gap-1.5">
+                      <div className="inline-flex gap-2">
                         <button
                           disabled={actionId !== null}
                           onClick={() => handleUpdateStatus(cand.id, cand.status)}
-                          className={`cursor-pointer rounded-md border p-1.5 transition ${
-                            cand.status === "BANNED"
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-600"
-                              : "border-orange-200 bg-orange-50 text-orange-600"
-                          }`}
-                          title={
-                            cand.status === "BANNED"
-                              ? "Mở khóa ứng viên"
-                              : "Khóa ứng viên"
-                          }
+                          className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold hover:bg-slate-100"
                         >
                           {actionId === cand.id ? (
                             <Loader2 size={13} className="animate-spin" />
                           ) : cand.status === "BANNED" ? (
-                            <UserCheck size={13} />
+                            <span className="inline-flex items-center gap-1">
+                              <UserCheck size={13} /> Mở khóa
+                            </span>
                           ) : (
-                            <ShieldAlert size={13} />
+                            <span className="inline-flex items-center gap-1">
+                              <ShieldAlert size={13} /> Khóa
+                            </span>
                           )}
                         </button>
-
-                        <button
-                          onClick={() => handleEdit(cand.id, "candidate")}
-                          className="cursor-pointer rounded-md bg-slate-100 p-1.5 text-slate-700 transition hover:bg-slate-200"
-                          title="Chỉnh sửa"
-                        >
-                          <Edit size={13} />
-                        </button>
-
                         <button
                           disabled={actionId === cand.id}
                           onClick={() => handleDelete(cand.id, "candidate")}
-                          className="cursor-pointer rounded-md border border-red-100 bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100"
-                          title="Xóa tài khoản ứng viên"
+                          className="rounded-md border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 disabled:opacity-60"
                         >
-                          {actionId === cand.id ? (
-                            <Loader2 size={13} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={13} />
-                          )}
+                          Xóa
                         </button>
                       </div>
                     </td>
@@ -681,53 +640,37 @@ export default function AdminDashboardPage() {
               <TableLayout
                 data={filteredJobs}
                 headers={[
-                  "Tiêu đề tin",
-                  "Công ty đăng",
+                  "Tiêu đề",
+                  "Doanh nghiệp",
                   "Địa điểm",
                   "Trạng thái",
                 ]}
                 renderRow={(job) => (
-                  <tr
-                    key={job.id}
-                    className="text-xs font-medium text-slate-700 transition hover:bg-slate-50/50"
-                  >
-                    <td className="p-4 font-bold text-slate-950">{job.title}</td>
-                    <td className="p-4 font-semibold uppercase text-slate-600">
+                  <tr key={job.id} className="text-sm">
+                    <td className="p-4 font-bold text-slate-900">{job.title}</td>
+                    <td className="p-4 text-slate-600">
                       {job.employer?.companyName || "N/A"}
                     </td>
                     <td className="p-4 text-slate-500">{job.location}</td>
                     <td className="p-4">
-                      {job.status === "OPEN" ? (
-                        <span className="font-bold text-emerald-600">
-                          MỞ PUBLIC
-                        </span>
-                      ) : (
-                        <span className="font-bold text-slate-400">ĐÃ ĐÓNG</span>
-                      )}
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-bold ${
+                          job.status === "OPEN"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {job.status}
+                      </span>
                     </td>
                     <td className="p-4 text-right">
-                      <div className="inline-flex gap-1.5">
-                        <button
-                          onClick={() => handleEdit(job.id, "job")}
-                          className="cursor-pointer rounded-md bg-slate-100 p-1.5 text-slate-700 transition hover:bg-slate-200"
-                          title="Chỉnh sửa"
-                        >
-                          <Edit size={13} />
-                        </button>
-
-                        <button
-                          disabled={actionId === job.id}
-                          onClick={() => handleDelete(job.id, "job")}
-                          className="cursor-pointer rounded-md border border-red-100 bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100"
-                          title="Xóa tin tuyển dụng"
-                        >
-                          {actionId === job.id ? (
-                            <Loader2 size={13} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={13} />
-                          )}
-                        </button>
-                      </div>
+                      <button
+                        disabled={actionId === job.id}
+                        onClick={() => handleDelete(job.id, "job")}
+                        className="rounded-md border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 disabled:opacity-60"
+                      >
+                        Xóa
+                      </button>
                     </td>
                   </tr>
                 )}
@@ -736,44 +679,67 @@ export default function AdminDashboardPage() {
 
             {activeTab === "applications" && (
               <TableLayout
-                data={filteredApps}
+                data={filteredApplications}
                 headers={[
-                  "Ứng viên nộp đơn",
-                  "Vị trí tuyển dụng",
-                  "Độ tương thích AI",
-                  "Trạng thái đơn",
+                  "Ứng viên",
+                  "Vị trí",
+                  "Match score",
+                  "Trạng thái",
                 ]}
                 renderRow={(app) => (
-                  <tr
-                    key={app.id}
-                    className="text-xs font-medium text-slate-700 transition hover:bg-slate-50/50"
-                  >
-                    <td className="p-4 font-bold text-slate-950">
+                  <tr key={app.id} className="text-sm">
+                    <td className="p-4 font-bold text-slate-900">
                       {app.candidate?.user?.fullName || "Ẩn danh"}
                     </td>
-                    <td className="p-4 font-bold text-slate-600">
+                    <td className="p-4 text-slate-600">
                       {app.job?.title || "N/A"}
                     </td>
-                    <td className="p-4 font-mono text-sm font-bold text-blue-600">
+                    <td className="p-4 font-bold text-primary">
                       {app.matchScore ? `${app.matchScore}%` : "Chưa có"}
                     </td>
-                    <td className="p-4">
-                      <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-700">
-                        {app.status}
-                      </span>
-                    </td>
+                    <td className="p-4 text-slate-500">{app.status}</td>
                     <td className="p-4 text-right">
                       <button
                         disabled={actionId === app.id}
                         onClick={() => handleDelete(app.id, "application")}
-                        className="cursor-pointer rounded-md border border-red-100 bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100"
-                        title="Xóa đơn ứng tuyển"
+                        className="rounded-md border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 disabled:opacity-60"
                       >
-                        {actionId === app.id ? (
-                          <Loader2 size={13} className="animate-spin" />
-                        ) : (
-                          <Trash2 size={13} />
-                        )}
+                        Xóa
+                      </button>
+                    </td>
+                  </tr>
+                )}
+              />
+            )}
+
+            {activeTab === "stories" && (
+              <TableLayout
+                data={filteredStories}
+                headers={[
+                  "Tiêu đề",
+                  "Tác giả hiển thị",
+                  "Vai trò",
+                  "Trạng thái",
+                ]}
+                renderRow={(story) => (
+                  <tr key={story.id} className="text-sm">
+                    <td className="p-4 font-bold text-slate-900">
+                      {story.title || "Bài viết không tiêu đề"}
+                    </td>
+                    <td className="p-4 text-slate-600">
+                      {story.authorName || story.author?.user?.fullName || "N/A"}
+                    </td>
+                    <td className="p-4 text-slate-500">
+                      {story.authorRole || "Chưa cập nhật"}
+                    </td>
+                    <td className="p-4 text-slate-500">{story.status}</td>
+                    <td className="p-4 text-right">
+                      <button
+                        disabled={actionId === story.id}
+                        onClick={() => handleDelete(story.id, "story")}
+                        className="rounded-md border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100 disabled:opacity-60"
+                      >
+                        Xóa
                       </button>
                     </td>
                   </tr>

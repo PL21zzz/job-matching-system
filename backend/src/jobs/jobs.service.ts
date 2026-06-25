@@ -4,6 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 import OpenAI from 'openai';
@@ -21,6 +22,8 @@ import { MatchScoreService } from './match-score.service';
 export class JobsService {
   private ai: GoogleGenerativeAI;
   private openai?: OpenAI;
+  private static readonly AI_TIMEOUT_MS = 30000;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly matchScoreService: MatchScoreService,
@@ -44,6 +47,117 @@ export class JobsService {
     ) {
       this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     }
+  }
+
+  private withAiTimeout<T>(promise: Promise<T>, label = 'Gemini'): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`${label} timeout after 30 seconds`)),
+          JobsService.AI_TIMEOUT_MS,
+        ),
+      ),
+    ]);
+  }
+
+  private extractJsonObjectFromAiText(rawText: string) {
+    if (!rawText) return null;
+
+    const trimmed = rawText.trim();
+    const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    const candidate = fencedMatch?.[1]?.trim() || trimmed;
+
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      const firstBrace = candidate.indexOf('{');
+      const lastBrace = candidate.lastIndexOf('}');
+
+      if (firstBrace >= 0 && lastBrace > firstBrace) {
+        const sliced = candidate.slice(firstBrace, lastBrace + 1);
+        try {
+          return JSON.parse(sliced);
+        } catch {
+          return null;
+        }
+      }
+
+      return null;
+    }
+  }
+
+  private async generateInterviewPracticeContent(prompt: string) {
+    const fallbackFocusPoints = [
+      'Trả lời rõ ví dụ thực tế',
+      'Nêu kỹ năng liên quan trực tiếp đến vị trí',
+      'Giữ câu trả lời ngắn gọn, tự tin',
+    ];
+
+    const retryDelays = [0, 1200, 2500];
+    let lastError: any = null;
+
+    for (let attempt = 0; attempt < retryDelays.length; attempt += 1) {
+      if (retryDelays[attempt] > 0) {
+        await new Promise((resolve) => setTimeout(resolve, retryDelays[attempt]));
+      }
+
+      try {
+        const model = this.ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const result = await this.withAiTimeout(
+          model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+          },
+          }),
+          'Gemini interview practice',
+        );
+        const rawText = result.response.text().trim();
+
+        const parsed = this.extractJsonObjectFromAiText(rawText);
+        if (parsed) {
+          return {
+            reply: parsed.reply || 'Chúng ta bắt đầu buổi tập phỏng vấn nhé.',
+            focusPoints: Array.isArray(parsed.focusPoints)
+              ? parsed.focusPoints.slice(0, 3)
+              : fallbackFocusPoints,
+          };
+        }
+
+        return {
+          reply: rawText || 'Chúng ta bắt đầu buổi tập phỏng vấn nhé.',
+          focusPoints: fallbackFocusPoints,
+        };
+      } catch (error: any) {
+        lastError = error;
+        const message = String(error?.message || error || '');
+        const isTemporaryOverload =
+          message.includes('503') ||
+          message.toLowerCase().includes('service unavailable') ||
+          message.toLowerCase().includes('high demand');
+
+        if (!isTemporaryOverload || attempt === retryDelays.length - 1) {
+          break;
+        }
+      }
+    }
+
+    const finalMessage = String(lastError?.message || lastError || '');
+
+    if (
+      finalMessage.includes('503') ||
+      finalMessage.toLowerCase().includes('service unavailable') ||
+      finalMessage.toLowerCase().includes('high demand')
+    ) {
+      throw new ServiceUnavailableException(
+        'AI phỏng vấn đang tạm quá tải. Bạn đợi khoảng 10-30 giây rồi thử lại giúp mình.',
+      );
+    }
+
+    throw new InternalServerErrorException(
+      `Lỗi AI phỏng vấn thử: ${finalMessage}`,
+    );
   }
 
   async findAllCategories() {
@@ -261,7 +375,10 @@ export class JobsService {
 
     try {
       const model = this.ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
-      const result = await model.generateContent(prompt);
+      const result = await this.withAiTimeout(
+        model.generateContent(prompt),
+        'Gemini cover letter',
+      );
       return { coverLetter: result.response.text().trim() };
     } catch (error: any) {
       throw new InternalServerErrorException(
@@ -319,6 +436,94 @@ export class JobsService {
       );
     }
 
+    const disabilityNameClean =
+      user.candidateProfile.disabilityType?.name || 'Chưa khai báo';
+    const totalQuestions = 3;
+    const previousUserAnswersClean = (dto.history || []).filter(
+      (item) => item.role === 'user',
+    ).length;
+    const candidateMessageClean = dto.message?.trim() || '';
+    const shouldSummarizeClean =
+      candidateMessageClean.length > 0 &&
+      previousUserAnswersClean >= totalQuestions - 1;
+    const currentQuestionClean = shouldSummarizeClean
+      ? totalQuestions
+      : Math.min(previousUserAnswersClean + 1, totalQuestions);
+
+    const profileSummaryClean = [
+      `Họ tên: ${user.fullName}`,
+      `Nhóm khuyết tật/nhu cầu hỗ trợ đã khai báo trong profile: ${disabilityNameClean}`,
+      user.candidateProfile.address
+        ? `Địa chỉ: ${user.candidateProfile.address}`
+        : '',
+      user.candidateProfile.phone
+        ? `Điện thoại: ${user.candidateProfile.phone}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const historyTextClean = (dto.history || [])
+      .map((item) => `${item.role}: ${item.content}`)
+      .join('\n');
+
+    const promptClean = `
+Bạn là một AI interviewer mô phỏng nhà tuyển dụng, đang phỏng vấn một ứng viên khuyết tật cho đúng công việc bên dưới.
+
+[CÔNG VIỆC]
+- Vị trí: ${job.title}
+- Doanh nghiệp: ${job.employer.companyName}
+- Ngành: ${job.category.name}
+- Địa điểm: ${job.location}
+- Hình thức: ${job.type}
+- Mô tả: ${job.description}
+- Yêu cầu: ${job.requirements}
+- Trợ năng nơi làm việc: ${job.accessibilityFeatures || 'Chưa có mô tả'}
+- Nhóm phù hợp: ${job.suitableDisabilities.map((item) => item.name).join(', ') || 'Chưa khai báo'}
+
+[THÔNG TIN ỨNG VIÊN]
+${profileSummaryClean}
+
+[LỊCH SỬ PHỎNG VẤN]
+${historyTextClean || 'Chưa có'}
+
+[TIN NHẮN MỚI NHẤT CỦA ỨNG VIÊN]
+${candidateMessageClean || 'Ứng viên vừa bắt đầu buổi tập phỏng vấn.'}
+
+[TRẠNG THÁI BUỔI TẬP]
+- Tổng số câu trả lời cần có: ${totalQuestions}
+- Số câu ứng viên đã trả lời trước lượt này: ${previousUserAnswersClean}
+- Câu hiện tại: ${currentQuestionClean}/${totalQuestions}
+- Chế độ hiện tại: ${shouldSummarizeClean ? 'TỔNG KẾT BUỔI PHỎNG VẤN' : 'TIẾP TỤC PHỎNG VẤN'}
+
+QUY TẮC BẮT BUỘC:
+- Trả lời bằng tiếng Việt, có dấu, tự nhiên, rõ ràng.
+- Bạn PHẢI ý thức rõ ứng viên thuộc nhóm: ${disabilityNameClean}. Cách hỏi và nhận xét phải phù hợp, tôn trọng, không thương hại, không bi quan.
+- Nếu đây là lượt đầu tiên: giới thiệu ngắn và hỏi đúng 1 câu đầu tiên.
+- Nếu chưa đến phần tổng kết: nhận xét ngắn câu vừa trả lời rồi hỏi tiếp đúng 1 câu mới.
+- Nếu đang ở chế độ TỔNG KẾT BUỔI PHỎNG VẤN:
+  1. Nêu điểm mạnh
+  2. Nêu điểm cần cải thiện
+  3. Gợi ý trả lời tốt hơn
+  4. Đánh giá mức độ sẵn sàng
+  5. KHÔNG hỏi thêm câu mới
+- Trả về JSON thuần, không markdown, không thêm giải thích ngoài JSON:
+{
+  "reply": "nội dung trả lời của AI",
+  "focusPoints": ["ý 1", "ý 2", "ý 3"]
+}
+`;
+
+    const cleanResult = await this.generateInterviewPracticeContent(promptClean);
+    return {
+      ...cleanResult,
+      isCompleted: shouldSummarizeClean,
+      currentQuestion: currentQuestionClean,
+      totalQuestions,
+      disabilityTypeLabel: disabilityNameClean,
+    };
+
+    /*
     const profileSummary = [
       `Họ tên: ${user.fullName}`,
       user.candidateProfile.disabilityType?.name
@@ -372,13 +577,18 @@ Yêu cầu:
 }
 `;
 
+    return this.generateInterviewPracticeContent(prompt);
+
     try {
       const model = this.ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
       const result = await model.generateContent(prompt);
       const rawText = result.response.text().trim();
 
       try {
-        const parsed = JSON.parse(rawText);
+        const parsed = this.extractJsonObjectFromAiText(rawText);
+        if (!parsed) {
+          throw new Error('Invalid AI interview JSON payload');
+        }
         return {
           reply: parsed.reply || 'Chúng ta bắt đầu buổi tập phỏng vấn nhé.',
           focusPoints: Array.isArray(parsed.focusPoints)
@@ -400,6 +610,7 @@ Yêu cầu:
         `Lỗi AI phỏng vấn thử: ${error.message || error}`,
       );
     }
+    */
   }
 
   async applyJob(userId: string, dto: ApplyJobDto, file: Express.Multer.File) {

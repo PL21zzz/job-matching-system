@@ -11,6 +11,7 @@ import { GenerateCvAiDto } from './dto/generate-cv-ai.dto';
 @Injectable()
 export class ResumesService {
   private ai: GoogleGenerativeAI;
+  private static readonly AI_TIMEOUT_MS = 30000;
 
   constructor(private prisma: PrismaService) {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -18,6 +19,18 @@ export class ResumesService {
       throw new Error('GEMINI_API_KEY chưa được cấu hình trong tệp .env');
     }
     this.ai = new GoogleGenerativeAI(apiKey);
+  }
+
+  private withAiTimeout<T>(promise: Promise<T>, label = 'Gemini'): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`${label} timeout after 30 seconds`)),
+          ResumesService.AI_TIMEOUT_MS,
+        ),
+      ),
+    ]);
   }
   async generateCvWithAi(userId: string, dto: GenerateCvAiDto) {
     const { jobId } = dto;
@@ -90,9 +103,12 @@ export class ResumesService {
       });
 
       // 5. Kích hoạt gọi AI xử lý bất đồng bộ (Giữ nguyên toàn bộ logic bên dưới)
-      const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      });
+      const result = await this.withAiTimeout(
+        model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        }),
+        'Gemini CV builder',
+      );
 
       const responseText = result.response.text();
 
