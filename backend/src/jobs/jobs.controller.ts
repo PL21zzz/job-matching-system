@@ -116,6 +116,14 @@ export class JobsController {
     return this.jobsService.findEmployerApplications(userId);
   }
 
+  @Get('employer/my-jobs')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Employer')
+  async getEmployerJobs(@Req() req: any) {
+    const userId = req.user.id || req.user.sub;
+    return this.jobsService.findEmployerJobs(userId);
+  }
+
   @Patch('applications/:id/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('Employer')

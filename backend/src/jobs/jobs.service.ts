@@ -559,6 +559,7 @@ Yêu cầu:
             id: true,
             title: true,
             status: true,
+            updatedAt: true,
           },
         },
         candidate: {
@@ -579,6 +580,39 @@ Yêu cầu:
       },
       orderBy: {
         appliedAt: 'desc',
+      },
+    });
+  }
+
+  async findEmployerJobs(userId: string) {
+    const employerProfile = await this.prisma.employerProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!employerProfile) {
+      throw new BadRequestException(
+        'Tài khoản của bạn không có quyền truy cập dữ liệu nhà tuyển dụng.',
+      );
+    }
+
+    return this.prisma.job.findMany({
+      where: {
+        employerId: employerProfile.id,
+      },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        updatedAt: true,
+        createdAt: true,
+        _count: {
+          select: {
+            applications: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: 'desc',
       },
     });
   }

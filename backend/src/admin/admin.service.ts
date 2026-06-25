@@ -1,29 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * 📊 1. BỐC SỐ LIỆU THỐNG KÊ TỔNG QUAN (Đổ vào 4 ô màu Dashboard)
-   */
   async getDashboardStats() {
     const [totalCandidates, pendingEmployers, openJobs, rejectedApplications] =
       await Promise.all([
         this.prisma.candidateProfile.count(),
-
         this.prisma.user.count({
           where: {
             role: { name: 'Employer' },
             status: 'PENDING',
           },
         }),
-
         this.prisma.job.count({
           where: { status: 'OPEN' },
         }),
-
         this.prisma.application.count({
           where: { status: 'REJECTED' },
         }),
@@ -37,11 +35,8 @@ export class AdminService {
     };
   }
 
-  /**
-   * 👥 2. LẤY DANH SÁCH DOANH NGHIỆP ĐANG CHỜ DUYỆT (PENDING)
-   */
   async getPendingEmployers() {
-    return await this.prisma.user.findMany({
+    return this.prisma.user.findMany({
       where: {
         role: { name: 'Employer' },
         status: 'PENDING',
@@ -55,9 +50,6 @@ export class AdminService {
     });
   }
 
-  /**
-   * 🏢 3. LẤY TOÀN BỘ DOANH NGHIỆP TRÊN HỆ THỐNG
-   */
   async getAllEmployers() {
     return this.prisma.user.findMany({
       where: {
@@ -74,9 +66,6 @@ export class AdminService {
     });
   }
 
-  /**
-   * 🎓 4. LẤY TOÀN BỘ ỨNG VIÊN TRÊN HỆ THỐNG
-   */
   async getAllCandidates() {
     return this.prisma.user.findMany({
       where: {
@@ -106,9 +95,6 @@ export class AdminService {
     });
   }
 
-  /**
-   * 💼 5. LẤY TOÀN BỘ TIN TUYỂN DỤNG (Kèm thông tin công ty và ngành nghề)
-   */
   async getAllJobs() {
     return this.prisma.job.findMany({
       include: {
@@ -129,9 +115,6 @@ export class AdminService {
     });
   }
 
-  /**
-   * 📄 6. LẤY TOÀN BỘ ĐƠN ỨNG TUYỂN (Giám sát hệ thống - Read-Only)
-   */
   async getAllApplications() {
     return this.prisma.application.findMany({
       include: {
@@ -158,46 +141,209 @@ export class AdminService {
     });
   }
 
-  /**
-   * 🚀 7. HÀNH ĐỘNG: PHÊ DUYỆT HOẶC KHÓA TÀI KHOẢN USER
-   */
+  async getAllCategories() {
+    return this.prisma.category.findMany({
+      orderBy: {
+        id: 'asc',
+      },
+    });
+  }
+
+  async createCategory(name: string) {
+    const normalizedName = name?.trim();
+
+    if (!normalizedName) {
+      throw new BadRequestException('Tên category không được để trống.');
+    }
+
+    const existing = await this.prisma.category.findUnique({
+      where: { name: normalizedName },
+    });
+
+    if (existing) {
+      throw new BadRequestException('Category này đã tồn tại.');
+    }
+
+    return this.prisma.category.create({
+      data: {
+        name: normalizedName,
+      },
+    });
+  }
+
+  async updateCategory(categoryId: number, name: string) {
+    const normalizedName = name?.trim();
+
+    if (!categoryId || Number.isNaN(categoryId)) {
+      throw new BadRequestException('ID category không hợp lệ.');
+    }
+
+    if (!normalizedName) {
+      throw new BadRequestException('Tên category không được để trống.');
+    }
+
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Không tìm thấy category này.');
+    }
+
+    const duplicate = await this.prisma.category.findFirst({
+      where: {
+        name: normalizedName,
+        NOT: { id: categoryId },
+      },
+    });
+
+    if (duplicate) {
+      throw new BadRequestException('Đã có category khác trùng tên này.');
+    }
+
+    return this.prisma.category.update({
+      where: { id: categoryId },
+      data: {
+        name: normalizedName,
+      },
+    });
+  }
+
+  async deleteCategory(categoryId: number) {
+    if (!categoryId || Number.isNaN(categoryId)) {
+      throw new BadRequestException('ID category không hợp lệ.');
+    }
+
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      include: {
+        jobs: {
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Không tìm thấy category này.');
+    }
+
+    if (category.jobs.length > 0) {
+      throw new BadRequestException(
+        'Category này đang được dùng bởi tin tuyển dụng, chưa thể xóa.',
+      );
+    }
+
+    return this.prisma.category.delete({
+      where: { id: categoryId },
+    });
+  }
+
   async updateUserStatus(
     userId: string,
     status: 'ACTIVE' | 'BANNED' | 'PENDING',
   ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user)
+    if (!user) {
       throw new NotFoundException('Không tìm thấy tài khoản người dùng này.');
+    }
 
-    return await this.prisma.user.update({
+    return this.prisma.user.update({
       where: { id: userId },
       data: { status },
     });
   }
 
-  /**
-   * 🗑️ 8. HÀNH ĐỘNG: XÓA TIN TUYỂN DỤNG RÁC
-   */
+  async deleteUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        role: true,
+        candidateProfile: true,
+        employerProfile: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy tài khoản người dùng này.');
+    }
+
+    if (user.role?.name === 'Admin') {
+      throw new BadRequestException(
+        'Hiện tại không hỗ trợ xóa trực tiếp tài khoản quản trị viên.',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      if (user.candidateProfile) {
+        await tx.application.deleteMany({
+          where: { candidateId: user.candidateProfile.id },
+        });
+
+        await tx.testimonial.updateMany({
+          where: { authorId: user.candidateProfile.id },
+          data: { authorId: null },
+        });
+
+        await tx.candidateProfile.delete({
+          where: { id: user.candidateProfile.id },
+        });
+      }
+
+      if (user.employerProfile) {
+        const employerJobs = await tx.job.findMany({
+          where: { employerId: user.employerProfile.id },
+          select: { id: true },
+        });
+
+        const jobIds = employerJobs.map((job) => job.id);
+
+        if (jobIds.length > 0) {
+          await tx.application.deleteMany({
+            where: {
+              jobId: { in: jobIds },
+            },
+          });
+
+          for (const job of employerJobs) {
+            await tx.job.delete({
+              where: { id: job.id },
+            });
+          }
+        }
+
+        await tx.employerProfile.delete({
+          where: { id: user.employerProfile.id },
+        });
+      }
+
+      await tx.user.delete({
+        where: { id: userId },
+      });
+    });
+
+    return { message: 'Đã xóa tài khoản người dùng và dữ liệu liên quan.' };
+  }
+
   async deleteJob(jobId: string) {
     const job = await this.prisma.job.findUnique({ where: { id: jobId } });
-    if (!job) throw new NotFoundException('Không tìm thấy tin tuyển dụng này.');
+    if (!job) {
+      throw new NotFoundException('Không tìm thấy tin tuyển dụng này.');
+    }
 
-    // Xóa tin tuyển dụng (Cơ chế Cascade hoặc tự động ngắt quan hệ tùy DB setup)
-    return await this.prisma.job.delete({
+    return this.prisma.job.delete({
       where: { id: jobId },
     });
   }
 
-  /**
-   * 🗑️ 9. HÀNH ĐỘNG: XÓA ĐƠN ỨNG TUYỂN SAI SÓT HOẶC SPAM (Hành chính)
-   */
   async deleteApplication(applicationId: string) {
     const app = await this.prisma.application.findUnique({
       where: { id: applicationId },
     });
-    if (!app) throw new NotFoundException('Không tìm thấy đơn ứng tuyển này.');
+    if (!app) {
+      throw new NotFoundException('Không tìm thấy đơn ứng tuyển này.');
+    }
 
-    return await this.prisma.application.delete({
+    return this.prisma.application.delete({
       where: { id: applicationId },
     });
   }
