@@ -303,8 +303,7 @@ export class AuthService {
 
   // 8. Hàm tạo cặp Token
   async getTokens(userId: string, email: string, role: string) {
-    const accessExpiresIn = (process.env.JWT_ACCESS_EXPIRES_IN ||
-      '15m') as any;
+    const accessExpiresIn = (process.env.JWT_ACCESS_EXPIRES_IN || '15m') as any;
     const refreshExpiresIn = (process.env.JWT_REFRESH_EXPIRES_IN ||
       '1d') as any;
 
@@ -368,6 +367,20 @@ export class AuthService {
     return { message: 'Đăng xuất thành công!' };
   }
 
+  // BƯỚC 1: Khởi tạo transporter 1 lần dùng chung (không khởi tạo lại trong hàm)
+  private transporter = nodemailer.createTransport({
+    host: process.env.MAIL_HOST || 'smtp.gmail.com',
+    port: Number(process.env.MAIL_PORT) || 587,
+    secure: false, // Port 587 chạy TLS
+    auth: {
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false, // BẮT BUỘC: Bỏ qua lỗi verify chứng chỉ SSL trên Render Cloud
+    },
+  });
+
   // HELPER: SEND EMAIL
   private async sendOtpMail(
     email: string,
@@ -375,30 +388,23 @@ export class AuthService {
     subject: string,
     message: string,
   ) {
-    const transporter = nodemailer.createTransport({
-      host: process.env.MAIL_HOST,
-      port: Number(process.env.MAIL_PORT) || 587,
-      auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS },
-    });
-
-    await transporter.sendMail({
-      from: '"Job Matching System" <no-reply@jobmatching.com>',
+    return this.transporter.sendMail({
+      from: '"Job Matching System" <' + process.env.MAIL_USER + '>',
       to: email,
       subject,
       html: `
-        <div style="font-family: Arial; padding: 20px; border: 1px solid #eee;">
-          <h2 style="color: #4CAF50;">Mã OTP của bạn</h2>
-          <p>${message}</p>
-          <h1 style="background: #f4f4f4; padding: 10px; text-align: center;">${otp}</h1>
-          <p>Hết hạn sau 10 phút.</p>
-        </div>
-      `,
+      <div style="font-family: Arial; padding: 20px; border: 1px solid #eee;">
+        <h2 style="color: #4CAF50;">Mã OTP của bạn</h2>
+        <p>${message}</p>
+        <h1 style="background: #f4f4f4; padding: 10px; text-align: center;">${otp}</h1>
+        <p>Hết hạn sau 10 phút.</p>
+      </div>
+    `,
     });
   }
 
   // HELPER: RESEND EMAIL
   async resendOtp(email: string) {
-    // 1. Kiểm tra user có tồn tại không
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -407,29 +413,28 @@ export class AuthService {
       throw new NotFoundException('Người dùng không tồn tại!');
     }
 
-    // 2. Nếu đã ACTIVE rồi thì không cho gửi lại nữa
     if (user.status === 'ACTIVE') {
       throw new BadRequestException('Tài khoản này đã được kích hoạt rồi!');
     }
 
-    // 3. Tạo mã OTP mới (giống lúc Register)
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 phút mới
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // 4. Lưu/Cập nhật vào bảng OTP
     await this.prisma.otp.upsert({
       where: { email },
       update: { code: otpCode, expiresAt },
       create: { email, code: otpCode, expiresAt },
     });
 
-    // 5. Gửi email
-    await this.sendOtpMail(
+    // BƯỚC 2: Bỏ `await` ở đây để mail gửi ngầm, API phản hồi lập tức cho Frontend
+    this.sendOtpMail(
       email,
       otpCode,
       'Gửi lại mã xác thực OTP',
       'Chúng tôi nhận được yêu cầu gửi lại mã xác thực. Mã mới của bạn là:',
-    );
+    ).catch((err) => {
+      console.error('Lỗi gửi mail OTP:', err);
+    });
 
     return { message: 'Mã OTP mới đã được gửi thành công!' };
   }
