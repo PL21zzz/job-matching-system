@@ -27,13 +27,20 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: RegisterInput) => {
     try {
-      await axiosInstance.post("/auth/register", {
+      const response: any = await axiosInstance.post("/auth/register", {
         ...data,
         companyName: data.role === "Employer" ? data.companyName : undefined,
       });
 
       localStorage.setItem("register_email", data.email);
-      toast.success("Đăng ký thành công! Vui lòng nhập mã OTP đã gửi qua email.");
+      if (response?.otp) {
+        toast.success(
+          `Đăng ký thành công! Mã OTP xác thực của bạn là: ${response.otp}`,
+          { duration: 10000 },
+        );
+      } else {
+        toast.success("Đăng ký thành công! Vui lòng nhập mã OTP đã gửi qua email.");
+      }
       router.push("/verify-otp");
     } catch (error: any) {
       toast.error(typeof error === "string" ? error : "Đăng ký thất bại");

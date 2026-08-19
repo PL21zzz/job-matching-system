@@ -124,13 +124,18 @@ function VerifyOtpContent() {
 
   const handleResendOtp = async () => {
     try {
+      let res: any;
       if (isForgot) {
-        await axiosInstance.post("/auth/forgot-password", { email });
+        res = await axiosInstance.post("/auth/forgot-password", { email });
       } else {
-        await axiosInstance.post("/auth/resend-otp", { email });
+        res = await axiosInstance.post("/auth/resend-otp", { email });
       }
 
-      toast.success("Mã mới đã được gửi, vui lòng kiểm tra email.");
+      if (res?.otp) {
+        toast.success(`Mã OTP mới của bạn là: ${res.otp}`, { duration: 10000 });
+      } else {
+        toast.success("Mã mới đã được gửi, vui lòng kiểm tra email.");
+      }
       setTimer(60);
       setOtp(["", "", "", "", "", ""]);
     } catch {

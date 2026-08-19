@@ -87,7 +87,11 @@ export class AuthService {
         console.error('Lỗi gửi mail OTP (chế độ dự phòng):', err?.message || err);
       });
 
-      return { message: 'Đăng ký thành công!', email: user.email };
+      return {
+        message: 'Đăng ký thành công!',
+        email: user.email,
+        otp: otpCode,
+      };
     });
   }
 
@@ -550,6 +554,9 @@ export class AuthService {
       console.error('Lỗi gửi mail OTP:', err);
     });
 
-    return { message: 'Mã OTP mới đã được gửi thành công!' };
+    return {
+      message: 'Mã OTP mới đã được gửi thành công!',
+      otp: otpCode,
+    };
   }
 }
