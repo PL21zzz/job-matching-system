@@ -580,4 +580,69 @@ export class AuthService {
 
     return { message: 'Mã OTP mới đã được gửi thành công!' };
   }
+
+  // HELPER DIAGNOSTIC: TEST SEND EMAIL
+  async testSendEmail(toEmail: string) {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const resendApiKey = (process.env.RESEND_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+    const mailUser = (process.env.MAIL_USER || '').trim().replace(/^["']|["']$/g, '');
+    const mailPass = (process.env.MAIL_PASS || '').trim().replace(/^["']|["']$/g, '').replace(/\s+/g, '');
+
+    const diagnostics: any = {
+      targetEmail: toEmail,
+      resendConfigured: Boolean(resendApiKey),
+      nodemailerConfigured: Boolean(mailUser && mailPass),
+      logs: [],
+    };
+
+    if (resendApiKey) {
+      try {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${resendApiKey}`,
+          },
+          body: JSON.stringify({
+            from: 'Equitas AI <onboarding@resend.dev>',
+            to: [toEmail],
+            subject: 'Kiểm tra gửi mail OTP - Equitas AI',
+            html: `<p>Mã OTP thử nghiệm của bạn là: <b>${otp}</b></p>`,
+          }),
+        });
+
+        const text = await res.text();
+        if (res.ok) {
+          diagnostics.logs.push(`✅ Resend API gửi thành công! Phản hồi: ${text}`);
+          return { success: true, provider: 'Resend API', diagnostics };
+        } else {
+          diagnostics.logs.push(`❌ Resend API thất bại (Status ${res.status}): ${text}`);
+        }
+      } catch (err: any) {
+        diagnostics.logs.push(`❌ Resend API Lỗi: ${err?.message || err}`);
+      }
+    }
+
+    if (mailUser && mailPass) {
+      try {
+        const transporter = this.getTransporter();
+        const info = await transporter.sendMail({
+          from: `"Equitas AI" <${mailUser}>`,
+          to: toEmail,
+          subject: 'Kiểm tra gửi mail OTP - Equitas AI',
+          html: `<p>Mã OTP thử nghiệm của bạn là: <b>${otp}</b></p>`,
+        });
+        diagnostics.logs.push(`✅ Nodemailer SMTP gửi thành công! Message ID: ${info.messageId}`);
+        return { success: true, provider: 'Nodemailer SMTP', diagnostics };
+      } catch (err: any) {
+        diagnostics.logs.push(`❌ Nodemailer SMTP Lỗi: ${err?.message || err}`);
+      }
+    }
+
+    return {
+      success: false,
+      message: 'Chưa gửi được mail. Vui lòng kiểm tra chi tiết diagnostics.',
+      diagnostics,
+    };
+  }
 }

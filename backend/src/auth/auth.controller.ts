@@ -75,6 +75,12 @@ export class AuthController {
     return this.authService.resendOtp(email);
   }
 
+  @Get('test-email')
+  async testEmail(@Req() req: any) {
+    const to = req.query.to || req.query.email || 'thanhthoma333@gmail.com';
+    return this.authService.testSendEmail(to);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
   async changePassword(@Req() req, @Body() dto: ChangePasswordDto) {
