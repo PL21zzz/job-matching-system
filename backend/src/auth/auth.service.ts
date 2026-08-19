@@ -105,8 +105,9 @@ export class AuthService {
     const otpRecord = await this.prisma.otp.findUnique({ where: { email } });
 
     const isValidOtp =
-      code === '123456' ||
-      (otpRecord && otpRecord.code === code && otpRecord.expiresAt >= new Date());
+      Boolean(otpRecord) &&
+      otpRecord?.code === code &&
+      (otpRecord?.expiresAt ? otpRecord.expiresAt >= new Date() : false);
 
     if (!isValidOtp) {
       throw new BadRequestException('Mã OTP không chính xác hoặc đã hết hạn!');
