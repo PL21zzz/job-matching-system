@@ -87,11 +87,7 @@ export class AuthService {
         console.error('Lỗi gửi mail OTP (chế độ dự phòng):', err?.message || err);
       });
 
-      return {
-        message: 'Đăng ký thành công!',
-        email: user.email,
-        otp: otpCode,
-      };
+      return { message: 'Đăng ký thành công!', email: user.email };
     });
   }
 
@@ -453,29 +449,16 @@ export class AuthService {
   // }
 
   private getTransporter() {
-    const user = process.env.MAIL_USER;
-    const pass = process.env.MAIL_PASS;
-    const host = process.env.MAIL_HOST || 'smtp.gmail.com';
-    const port = Number(process.env.MAIL_PORT) || 465;
-
-    if (!user || !pass) {
-      console.warn(
-        '⚠️ MAIL CONFIG WARNING: Chưa cấu hình MAIL_USER hoặc MAIL_PASS trong môi trường.',
-      );
-    }
-
-    if (host.includes('gmail')) {
-      return nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user, pass },
-      });
-    }
+    const rawUser = (process.env.MAIL_USER || '').trim().replace(/^["']|["']$/g, '');
+    const rawPass = (process.env.MAIL_PASS || '').trim().replace(/^["']|["']$/g, '').replace(/\s+/g, '');
+    const host = (process.env.MAIL_HOST || 'smtp.gmail.com').trim().replace(/^["']|["']$/g, '');
+    const port = Number(process.env.MAIL_PORT) || 587;
 
     return nodemailer.createTransport({
       host,
       port,
       secure: port === 465,
-      auth: { user, pass },
+      auth: { user: rawUser, pass: rawPass },
       tls: {
         rejectUnauthorized: false,
       },
@@ -489,9 +472,10 @@ export class AuthService {
     subject: string,
     message: string,
   ) {
-    const mailUser = process.env.MAIL_USER;
+    const rawUser = (process.env.MAIL_USER || '').trim().replace(/^["']|["']$/g, '');
+    const rawPass = (process.env.MAIL_PASS || '').trim().replace(/^["']|["']$/g, '').replace(/\s+/g, '');
 
-    if (!mailUser || !process.env.MAIL_PASS) {
+    if (!rawUser || !rawPass) {
       console.warn(
         '⚠️ KHÔNG THỂ GỬI MAIL OTP THỰC: Chưa cấu hình MAIL_USER hoặc MAIL_PASS trên Render Environment Variables.',
       );
@@ -501,7 +485,7 @@ export class AuthService {
     try {
       const transporter = this.getTransporter();
       const info = await transporter.sendMail({
-        from: `"Equitas AI" <${mailUser}>`,
+        from: `"Equitas AI" <${rawUser}>`,
         to: email,
         subject,
         html: `
@@ -544,7 +528,6 @@ export class AuthService {
       create: { email, code: otpCode, expiresAt },
     });
 
-    // BƯỚC 2: Bỏ `await` ở đây để mail gửi ngầm, API phản hồi lập tức cho Frontend
     this.sendOtpMail(
       email,
       otpCode,
@@ -554,9 +537,6 @@ export class AuthService {
       console.error('Lỗi gửi mail OTP:', err);
     });
 
-    return {
-      message: 'Mã OTP mới đã được gửi thành công!',
-      otp: otpCode,
-    };
+    return { message: 'Mã OTP mới đã được gửi thành công!' };
   }
 }

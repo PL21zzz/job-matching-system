@@ -33,14 +33,7 @@ export default function RegisterPage() {
       });
 
       localStorage.setItem("register_email", data.email);
-      if (response?.otp) {
-        toast.success(
-          `Đăng ký thành công! Mã OTP xác thực của bạn là: ${response.otp}`,
-          { duration: 10000 },
-        );
-      } else {
-        toast.success("Đăng ký thành công! Vui lòng nhập mã OTP đã gửi qua email.");
-      }
+      toast.success("Đăng ký thành công! Vui lòng nhập mã OTP đã gửi qua email.");
       router.push("/verify-otp");
     } catch (error: any) {
       toast.error(typeof error === "string" ? error : "Đăng ký thất bại");
