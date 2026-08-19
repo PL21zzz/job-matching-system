@@ -119,7 +119,9 @@ export class AuthService {
     });
 
     if (otpRecord) {
-      await this.prisma.otp.delete({ where: { email } }).catch(() => {});
+      try {
+        await this.prisma.otp.delete({ where: { email } });
+      } catch {}
     }
 
     const tokens = await this.getTokens(
