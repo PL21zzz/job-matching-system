@@ -448,19 +448,35 @@ export class AuthService {
   //   return { message: 'Mã OTP mới đã được gửi thành công!' };
   // }
 
-  // BƯỚC 1: Khởi tạo transporter 1 lần dùng chung (không khởi tạo lại trong hàm)
-  private transporter = nodemailer.createTransport({
-    host: process.env.MAIL_HOST || 'smtp.gmail.com',
-    port: Number(process.env.MAIL_PORT) || 587,
-    secure: false, // Port 587 chạy TLS
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false, // BẮT BUỘC: Bỏ qua lỗi verify chứng chỉ SSL trên Render Cloud
-    },
-  });
+  private getTransporter() {
+    const user = process.env.MAIL_USER;
+    const pass = process.env.MAIL_PASS;
+    const host = process.env.MAIL_HOST || 'smtp.gmail.com';
+    const port = Number(process.env.MAIL_PORT) || 465;
+
+    if (!user || !pass) {
+      console.warn(
+        '⚠️ MAIL CONFIG WARNING: Chưa cấu hình MAIL_USER hoặc MAIL_PASS trong môi trường.',
+      );
+    }
+
+    if (host.includes('gmail')) {
+      return nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user, pass },
+      });
+    }
+
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+  }
 
   // HELPER: SEND EMAIL
   private async sendOtpMail(
@@ -469,19 +485,36 @@ export class AuthService {
     subject: string,
     message: string,
   ) {
-    return this.transporter.sendMail({
-      from: '"Job Matching System" <' + process.env.MAIL_USER + '>',
-      to: email,
-      subject,
-      html: `
-      <div style="font-family: Arial; padding: 20px; border: 1px solid #eee;">
-        <h2 style="color: #4CAF50;">Mã OTP của bạn</h2>
-        <p>${message}</p>
-        <h1 style="background: #f4f4f4; padding: 10px; text-align: center;">${otp}</h1>
-        <p>Hết hạn sau 10 phút.</p>
-      </div>
-    `,
-    });
+    const mailUser = process.env.MAIL_USER;
+
+    if (!mailUser || !process.env.MAIL_PASS) {
+      console.warn(
+        '⚠️ KHÔNG THỂ GỬI MAIL OTP THỰC: Chưa cấu hình MAIL_USER hoặc MAIL_PASS trên Render Environment Variables.',
+      );
+      return;
+    }
+
+    try {
+      const transporter = this.getTransporter();
+      const info = await transporter.sendMail({
+        from: `"Equitas AI" <${mailUser}>`,
+        to: email,
+        subject,
+        html: `
+        <div style="font-family: Arial, sans-serif; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; max-width: 500px; margin: 0 auto; background-color: #ffffff;">
+          <h2 style="color: #2563eb; margin-top: 0;">Mã xác thực OTP - Equitas AI</h2>
+          <p style="color: #475569; font-size: 15px; line-height: 1.5;">${message}</p>
+          <div style="background-color: #f1f5f9; padding: 16px; border-radius: 8px; text-align: center; margin: 20px 0;">
+            <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #0f172a;">${otp}</span>
+          </div>
+          <p style="color: #64748b; font-size: 13px;">Mã có hiệu lực trong 10 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.</p>
+        </div>
+      `,
+      });
+      console.log(`✅ Đã gửi mail OTP thành công tới ${email}. Message ID: ${info.messageId}`);
+    } catch (error: any) {
+      console.error(`❌ Lỗi gửi mail OTP tới ${email}:`, error?.message || error);
+    }
   }
 
   // HELPER: RESEND EMAIL
