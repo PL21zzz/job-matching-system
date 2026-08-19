@@ -65,12 +65,6 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch {
         clearLegacyAuthStorage();
-        if (
-          window.location.pathname !== "/login" &&
-          window.location.pathname !== "/register"
-        ) {
-          window.location.href = "/login";
-        }
       }
     }
 
