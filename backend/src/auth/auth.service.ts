@@ -465,19 +465,59 @@ export class AuthService {
     });
   }
 
-  // HELPER: SEND EMAIL
+  // HELPER: SEND EMAIL (Hỗ trợ Resend HTTPS API & Nodemailer SMTP)
   private async sendOtpMail(
     email: string,
     otp: string,
     subject: string,
     message: string,
   ) {
+    const resendApiKey = process.env.RESEND_API_KEY?.trim();
+
+    // 1. Ưu tiên gửi qua Resend HTTPS API (chuẩn 100% cho Render Cloud, không bị chặn port SMTP)
+    if (resendApiKey) {
+      try {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${resendApiKey}`,
+          },
+          body: JSON.stringify({
+            from: 'Equitas AI <onboarding@resend.dev>',
+            to: [email],
+            subject,
+            html: `
+            <div style="font-family: Arial, sans-serif; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; max-width: 500px; margin: 0 auto; background-color: #ffffff;">
+              <h2 style="color: #2563eb; margin-top: 0;">Mã xác thực OTP - Equitas AI</h2>
+              <p style="color: #475569; font-size: 15px; line-height: 1.5;">${message}</p>
+              <div style="background-color: #f1f5f9; padding: 16px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #0f172a;">${otp}</span>
+              </div>
+              <p style="color: #64748b; font-size: 13px;">Mã có hiệu lực trong 10 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.</p>
+            </div>
+          `,
+          }),
+        });
+
+        if (res.ok) {
+          console.log(`✅ [Resend API] Đã gửi mail OTP thành công tới ${email}`);
+          return;
+        }
+        const errText = await res.text();
+        console.error(`❌ [Resend API Error]: ${errText}`);
+      } catch (err: any) {
+        console.error(`❌ [Resend API Exception]:`, err?.message || err);
+      }
+    }
+
+    // 2. Phương án dự phòng: Nodemailer SMTP
     const rawUser = (process.env.MAIL_USER || '').trim().replace(/^["']|["']$/g, '');
     const rawPass = (process.env.MAIL_PASS || '').trim().replace(/^["']|["']$/g, '').replace(/\s+/g, '');
 
     if (!rawUser || !rawPass) {
       console.warn(
-        '⚠️ KHÔNG THỂ GỬI MAIL OTP THỰC: Chưa cấu hình MAIL_USER hoặc MAIL_PASS trên Render Environment Variables.',
+        '⚠️ KHÔNG THỂ GỬI MAIL OTP: Chưa cấu hình RESEND_API_KEY hoặc MAIL_USER/MAIL_PASS.',
       );
       return;
     }
@@ -499,9 +539,9 @@ export class AuthService {
         </div>
       `,
       });
-      console.log(`✅ Đã gửi mail OTP thành công tới ${email}. Message ID: ${info.messageId}`);
+      console.log(`✅ [Nodemailer SMTP] Đã gửi mail OTP thành công tới ${email}. Message ID: ${info.messageId}`);
     } catch (error: any) {
-      console.error(`❌ Lỗi gửi mail OTP tới ${email}:`, error?.message || error);
+      console.error(`❌ [Nodemailer SMTP Error] Lỗi gửi mail OTP tới ${email}:`, error?.message || error);
     }
   }
 
