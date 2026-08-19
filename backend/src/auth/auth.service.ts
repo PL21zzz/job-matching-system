@@ -38,10 +38,11 @@ export class AuthService {
     if (!role) throw new BadRequestException('Vai trò không hợp lệ!');
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    return this.prisma.$transaction(async (tx) => {
+    const user = await this.prisma.$transaction(async (tx) => {
       // A. Tạo User
-      const user = await tx.user.create({
+      const createdUser = await tx.user.create({
         data: {
           email: dto.email,
           passwordHash: hashedPassword,
@@ -53,42 +54,42 @@ export class AuthService {
 
       // B. Tạo Profile tương ứng (Logic cực gọn)
       if (dto.role === 'Candidate') {
-        await tx.candidateProfile.create({ data: { userId: user.id } });
+        await tx.candidateProfile.create({ data: { userId: createdUser.id } });
       } else if (dto.role === 'Employer') {
         await tx.employerProfile.create({
           data: {
-            userId: user.id,
+            userId: createdUser.id,
             companyName: dto.companyName, // Đã được Validator đảm bảo có dữ liệu
           },
         });
       }
 
-      // C. OTP & Mail (Giữ nguyên logic của sếp)
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      // C. OTP & Mail
       await tx.otp.upsert({
-        where: { email: user.email },
+        where: { email: createdUser.email },
         update: {
           code: otpCode,
           expiresAt: new Date(Date.now() + 10 * 60 * 1000),
         },
         create: {
-          email: user.email,
+          email: createdUser.email,
           code: otpCode,
           expiresAt: new Date(Date.now() + 10 * 60 * 1000),
         },
       });
 
-      this.sendOtpMail(
-        user.email,
-        otpCode,
-        'Xác thực tài khoản',
-        'Mã OTP của bạn là:',
-      ).catch((err) => {
-        console.error('Lỗi gửi mail OTP (chế độ dự phòng):', err?.message || err);
-      });
-
-      return { message: 'Đăng ký thành công!', email: user.email };
+      return createdUser;
     });
+
+    // Gửi email OTP sau khi transaction ghi DB thành công
+    await this.sendOtpMail(
+      user.email,
+      otpCode,
+      'Xác thực tài khoản',
+      'Mã OTP của bạn là:',
+    );
+
+    return { message: 'Đăng ký thành công!', email: user.email };
   }
 
   // 2. XÁC THỰC OTP & TẠO PROFILE
@@ -569,14 +570,12 @@ export class AuthService {
       create: { email, code: otpCode, expiresAt },
     });
 
-    this.sendOtpMail(
+    await this.sendOtpMail(
       email,
       otpCode,
       'Gửi lại mã xác thực OTP',
       'Chúng tôi nhận được yêu cầu gửi lại mã xác thực. Mã mới của bạn là:',
-    ).catch((err) => {
-      console.error('Lỗi gửi mail OTP:', err);
-    });
+    );
 
     return { message: 'Mã OTP mới đã được gửi thành công!' };
   }
