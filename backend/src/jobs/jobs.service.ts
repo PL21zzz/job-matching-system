@@ -169,14 +169,17 @@ export class JobsService {
   }
 
   async createJob(userId: string, dto: CreateJobDto) {
-    const employerProfile = await this.prisma.employerProfile.findUnique({
+    let employerProfile = await this.prisma.employerProfile.findUnique({
       where: { userId: userId },
     });
 
     if (!employerProfile) {
-      throw new BadRequestException(
-        'Tài khoản của bạn chưa hoàn thiện hồ sơ nhà tuyển dụng để có thể đăng tin.',
-      );
+      employerProfile = await this.prisma.employerProfile.create({
+        data: {
+          userId: userId,
+          companyName: 'Doanh nghiệp',
+        },
+      });
     }
 
     const categoryExists = await this.prisma.category.findUnique({

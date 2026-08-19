@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async getProfileMe(userId: string, userRole: string) {
+  async getProfileMe(userId: string, userRole?: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -14,15 +14,12 @@ export class UsersService {
         fullName: true,
         roleId: true,
         role: true,
-        candidateProfile:
-          userRole === 'Candidate'
-            ? {
-                include: {
-                  disabilityType: true,
-                },
-              }
-            : false,
-        employerProfile: userRole === 'Employer' ? true : false,
+        candidateProfile: {
+          include: {
+            disabilityType: true,
+          },
+        },
+        employerProfile: true,
       },
     });
 

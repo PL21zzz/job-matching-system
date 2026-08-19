@@ -10,6 +10,16 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+api.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => response.data,
   async (error) => {
@@ -27,11 +37,38 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
       try {
-        await axios.post(`${baseURL}/auth/refresh`, {}, { withCredentials: true });
+        const refreshToken = localStorage.getItem("refresh_token");
+        const res: any = await axios.post(
+          `${baseURL}/auth/refresh`,
+          {},
+          {
+            withCredentials: true,
+            headers: refreshToken
+              ? { Authorization: `Bearer ${refreshToken}` }
+              : {},
+          },
+        );
+
+        const newAccessToken = res.data?.access_token || res?.access_token;
+        const newRefreshToken = res.data?.refresh_token || res?.refresh_token;
+
+        if (newAccessToken) {
+          localStorage.setItem("access_token", newAccessToken);
+        }
+        if (newRefreshToken) {
+          localStorage.setItem("refresh_token", newRefreshToken);
+        }
+
+        if (newAccessToken && originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        }
         return api(originalRequest);
       } catch {
         clearLegacyAuthStorage();
-        if (window.location.pathname !== "/login") {
+        if (
+          window.location.pathname !== "/login" &&
+          window.location.pathname !== "/register"
+        ) {
           window.location.href = "/login";
         }
       }

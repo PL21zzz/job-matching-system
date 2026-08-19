@@ -26,6 +26,12 @@ export default function LoginPage() {
       const response: any = await axiosInstance.post("/auth/login", data);
 
       if (response?.user) {
+        if (response?.access_token) {
+          localStorage.setItem("access_token", response.access_token);
+        }
+        if (response?.refresh_token) {
+          localStorage.setItem("refresh_token", response.refresh_token);
+        }
         setAuth(response.user);
         toast.success("Đăng nhập thành công!");
         router.push("/");

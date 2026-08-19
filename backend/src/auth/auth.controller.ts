@@ -37,7 +37,12 @@ export class AuthController {
   ) {
     const result = await this.authService.login(body);
     this.setAuthCookies(res, result.access_token, result.refresh_token);
-    return { user: result.user, message: result.message };
+    return {
+      user: result.user,
+      access_token: result.access_token,
+      refresh_token: result.refresh_token,
+      message: result.message,
+    };
   }
 
   @Post('forgot-password')
@@ -56,8 +61,13 @@ export class AuthController {
   }
 
   @Post('verify-register')
-  verifyRegister(@Body() dto: VerifyRegisterDto) {
-    return this.authService.verifyRegister(dto);
+  async verifyRegister(
+    @Body() dto: VerifyRegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.verifyRegister(dto);
+    this.setAuthCookies(res, result.access_token, result.refresh_token);
+    return result;
   }
 
   @Post('resend-otp')
@@ -110,7 +120,11 @@ export class AuthController {
     const refreshToken = req.user.refreshToken;
     const tokens = await this.authService.refreshTokens(userId, refreshToken);
     this.setAuthCookies(res, tokens.access_token, tokens.refresh_token);
-    return { message: 'Làm mới phiên đăng nhập thành công.' };
+    return {
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      message: 'Làm mới phiên đăng nhập thành công.',
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -131,17 +145,15 @@ export class AuthController {
     refreshToken?: string,
   ) {
     const production = process.env.NODE_ENV === 'production';
+    const isNone = process.env.COOKIE_SAME_SITE === 'none' || production;
     const accessCookieMaxAge =
       Number(process.env.ACCESS_COOKIE_MAX_AGE_MS) || 60 * 60 * 1000;
     const refreshCookieMaxAge =
       Number(process.env.REFRESH_COOKIE_MAX_AGE_MS) || 24 * 60 * 60 * 1000;
     const common = {
       httpOnly: true,
-      secure: production,
-      sameSite:
-        process.env.COOKIE_SAME_SITE === 'none'
-          ? ('none' as const)
-          : ('lax' as const),
+      secure: isNone || production,
+      sameSite: isNone ? ('none' as const) : ('lax' as const),
       path: '/',
     };
     res.cookie('access_token', accessToken, {
@@ -158,13 +170,11 @@ export class AuthController {
 
   private clearAuthCookies(res: Response) {
     const production = process.env.NODE_ENV === 'production';
+    const isNone = process.env.COOKIE_SAME_SITE === 'none' || production;
     const common = {
       httpOnly: true,
-      secure: production,
-      sameSite:
-        process.env.COOKIE_SAME_SITE === 'none'
-          ? ('none' as const)
-          : ('lax' as const),
+      secure: isNone || production,
+      sameSite: isNone ? ('none' as const) : ('lax' as const),
       path: '/',
     };
 

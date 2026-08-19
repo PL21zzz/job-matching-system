@@ -197,7 +197,7 @@ export default function InterviewPracticeModal({
     try {
       const response = await jobService.practiceInterview(job.id, {
         message,
-        history: [...history, nextUserMessage].slice(-10),
+        history: history.slice(-10),
       });
 
       setMessages((current) => [

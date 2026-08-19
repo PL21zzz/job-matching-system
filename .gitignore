@@ -1,6 +1,9 @@
 # Dependency directories
 node_modules/
 dist/
+.pnpm-store/
+tmp/
+tmp_*
 
 # Environment variables
 .env

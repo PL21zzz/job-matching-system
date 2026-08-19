@@ -95,10 +95,17 @@ function VerifyOtpContent() {
           `/reset-password?email=${encodeURIComponent(email)}&otp=${otpCode}`,
         );
       } else {
-        await axiosInstance.post("/auth/verify-register", {
+        const response: any = await axiosInstance.post("/auth/verify-register", {
           email,
           code: otpCode,
         });
+
+        if (response?.access_token) {
+          localStorage.setItem("access_token", response.access_token);
+        }
+        if (response?.refresh_token) {
+          localStorage.setItem("refresh_token", response.refresh_token);
+        }
 
         toast.success("Xác thực thành công! Đang chuyển hướng...");
         localStorage.removeItem("register_email");

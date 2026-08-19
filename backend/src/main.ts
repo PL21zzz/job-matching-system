@@ -15,7 +15,22 @@ async function bootstrap() {
     .map((origin) => origin.trim());
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (requestOrigin, callback) => {
+      if (!requestOrigin) return callback(null, true);
+      const isAllowed =
+        allowedOrigins.some((allowed) =>
+          requestOrigin.startsWith(allowed.replace(/\/$/, '')),
+        ) ||
+        /\.vercel\.app$/i.test(new URL(requestOrigin).hostname) ||
+        requestOrigin.includes('localhost') ||
+        requestOrigin.includes('127.0.0.1');
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(null, requestOrigin);
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

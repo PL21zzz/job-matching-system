@@ -9,40 +9,32 @@ export const authService = {
   },
 
   getProfileMeSafe: async (): Promise<any | null> => {
-    const tryFetchProfile = async () =>
-      fetch(`${baseURL}/users/profile/me`, {
-        credentials: "include",
-      });
-
-    let response = await tryFetchProfile();
-
-    if (response.status === 401) {
-      const refreshResponse = await fetch(`${baseURL}/auth/refresh`, {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (refreshResponse.ok) {
-        response = await tryFetchProfile();
-      }
-    }
-
-    if (!response.ok) {
+    try {
+      const response: any = await api.get("/users/profile/me");
+      return response.data?.data || response.data || response;
+    } catch {
       return null;
     }
-
-    return response.json();
   },
 
   getProfileOptional: async (): Promise<any | null> => {
-    const response = await fetch(`${baseURL}/users/profile/me`, {
-      credentials: "include",
-    });
-    return response.ok ? response.json() : null;
+    try {
+      const response: any = await api.get("/users/profile/me");
+      return response.data?.data || response.data || response;
+    } catch {
+      return null;
+    }
   },
 
   logout: async (): Promise<any> => {
-    return api.post("/auth/logout");
+    try {
+      await api.post("/auth/logout");
+    } finally {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+      }
+    }
   },
 
   updateProfile: async (payload: any): Promise<any> => {
